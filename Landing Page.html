@@ -1,0 +1,1403 @@
+<!doctype html>
+<html lang="it" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SecureLocalShare — Le tue password. Sul tuo PC. Solo tue.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:        #0A0A0F;
+    --bg-2:      #0D0D14;
+    --bg-3:      #07070D;
+    --surface:   #111118;
+    --surface-2: #15151E;
+    --text:      #F0F0F5;
+    --muted:     #8888A8;
+    --muted-2:   #5E5E80;
+    --accent:    #6C63FF;
+    --accent-2:  #00E5CC;
+    --hairline:  rgba(255,255,255,0.06);
+    --hairline-2:rgba(255,255,255,0.10);
+    --accent-glow: rgba(108,99,255,0.18);
+    --teal-glow:   rgba(0,229,204,0.10);
+
+    --r-card: 14px;
+    --r-btn:  10px;
+    --r-pill: 999px;
+
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.4);
+    --shadow-lg:   0 30px 60px -20px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.5);
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter','Geist',system-ui,sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    font-feature-settings: "ss01","cv11";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+  .mono{ font-family:'JetBrains Mono','Fira Code',monospace; }
+
+  ::selection{ background: var(--accent); color:#fff; }
+
+  a{ color:inherit; text-decoration:none; }
+  button{ font: inherit; color:inherit; background:none; border:0; cursor:pointer; }
+  :focus-visible{ outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  .container{
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+  @media (max-width: 768px){
+    .container{ padding: 0 20px; }
+  }
+
+  /* ─── NAVBAR ─────────────────────────────────────── */
+  .nav{
+    position: sticky; top:0; z-index: 50;
+    background: rgba(10,10,15,0.72);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    border-bottom: 1px solid transparent;
+    transition: border-color .25s ease, background .25s ease;
+  }
+  .nav.is-scrolled{
+    border-bottom-color: var(--hairline);
+    background: rgba(10,10,15,0.86);
+  }
+  .nav-inner{
+    display:flex; align-items:center; justify-content:space-between;
+    height: 68px;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px;
+    font-weight:600; letter-spacing:-0.01em;
+    font-size: 15.5px;
+  }
+  .brand-mark{
+    width:28px; height:28px; border-radius:8px;
+    display:grid; place-items:center;
+    background: linear-gradient(180deg, rgba(108,99,255,0.20), rgba(108,99,255,0.06));
+    border: 1px solid rgba(108,99,255,0.35);
+    color: #fff;
+  }
+  .brand-mark svg{ width:15px; height:15px; }
+  .nav-links{
+    display:flex; align-items:center; gap: 4px;
+  }
+  .nav-links a{
+    padding: 8px 14px;
+    font-size: 14px;
+    color: var(--muted);
+    border-radius: 8px;
+    transition: color .15s ease, background .15s ease;
+  }
+  .nav-links a:hover{ color: var(--text); background: rgba(255,255,255,0.04); }
+  .nav-cta{
+    margin-left: 14px;
+    padding: 8px 14px;
+    font-size: 13.5px; font-weight: 500;
+    border-radius: 8px;
+    border: 1px solid rgba(108,99,255,0.45);
+    color: var(--text);
+    background: rgba(108,99,255,0.08);
+    display:inline-flex; align-items:center; gap:6px;
+    transition: background .15s ease, border-color .15s ease, transform .15s ease;
+  }
+  .nav-cta:hover{ background: rgba(108,99,255,0.18); border-color: rgba(108,99,255,0.7); }
+  .nav-cta:active{ transform: translateY(1px); }
+  @media (max-width: 768px){
+    .nav-links a:not(.nav-cta){ display:none; }
+  }
+
+  /* ─── HERO ───────────────────────────────────────── */
+  .hero{
+    position: relative;
+    padding: 88px 0 110px;
+    overflow: hidden;
+  }
+  .hero-bg{
+    position:absolute; inset:0; pointer-events:none;
+    background-image:
+      radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 26px 26px;
+    background-position: 0 0;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 35%, #000 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 35%, #000 30%, transparent 75%);
+    opacity: .9;
+  }
+  .hero-glow{
+    position:absolute; left:50%; top:-12%;
+    width: 900px; height: 900px;
+    transform: translateX(-50%);
+    background: radial-gradient(circle, rgba(108,99,255,0.18), transparent 55%);
+    filter: blur(20px);
+    pointer-events:none;
+  }
+  .hero-inner{
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 56px;
+    align-items: center;
+  }
+  @media (max-width: 980px){
+    .hero-inner{ grid-template-columns: 1fr; gap: 48px; text-align: center; }
+    .hero-inner .badge{ margin-inline:auto; }
+    .hero-inner .hero-sub{ margin-inline:auto; }
+    .hero-inner .hero-cta-row{ justify-content:center; }
+  }
+
+  .badge{
+    display:inline-flex; align-items:center; gap:8px;
+    padding: 6px 12px 6px 10px;
+    border-radius: var(--r-pill);
+    border: 1px solid rgba(108,99,255,0.4);
+    background: rgba(108,99,255,0.08);
+    color: #B7B0FF;
+    font-size: 13px; font-weight:500;
+    letter-spacing: -0.005em;
+  }
+  .badge svg{ width:13px; height:13px; }
+  .badge .dot{
+    display:inline-block; width:4px; height:4px; border-radius:50%; background: rgba(183,176,255,0.5);
+  }
+
+  h1.hero-h1{
+    margin: 22px 0 22px;
+    font-size: clamp(40px, 7.2vw, 78px);
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    font-weight: 800;
+    color: var(--text);
+    text-wrap: balance;
+  }
+  h1.hero-h1 .accent{ color: var(--accent); }
+
+  .hero-sub{
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1.65;
+    max-width: 540px;
+    margin-bottom: 32px;
+    text-wrap: pretty;
+  }
+
+  .hero-cta-row{
+    display:flex; flex-wrap:wrap; gap: 14px; align-items: center;
+  }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:10px;
+    height: 52px;
+    padding: 0 26px;
+    border-radius: var(--r-btn);
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: -0.005em;
+    transition: transform .15s ease, box-shadow .2s ease, background .15s ease, border-color .15s ease;
+    white-space: nowrap;
+  }
+  .btn-primary{
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.18) inset, 0 10px 24px -10px rgba(108,99,255,0.6);
+  }
+  .btn-primary:hover{ background: #7C73FF; box-shadow: 0 1px 0 rgba(255,255,255,0.2) inset, 0 14px 32px -10px rgba(108,99,255,0.75); }
+  .btn-primary:active{ transform: translateY(1px); }
+  .btn-primary .meta{
+    opacity: .72;
+    font-weight: 500;
+    font-size: 13.5px;
+    margin-left: 4px;
+    padding-left: 12px;
+    border-left: 1px solid rgba(255,255,255,0.22);
+  }
+  .btn-ghost{
+    color: var(--muted);
+    height: 52px; padding: 0 18px;
+    font-size: 14.5px;
+  }
+  .btn-ghost:hover{ color: var(--text); }
+  .btn-lg{ height: 58px; font-size: 16px; padding: 0 32px; }
+
+  .micro-note{
+    color: var(--muted-2);
+    font-size: 13px;
+    margin-top: 14px;
+    display:flex; flex-wrap:wrap; gap: 4px 14px;
+  }
+  .micro-note span{ display:inline-flex; align-items:center; gap:6px; }
+  .micro-note .sep{ color: rgba(94,94,128,0.5); }
+
+  /* ─── DEVICE MOCKUP ───────────────────────────────── */
+  .mockup-wrap{
+    position: relative;
+    perspective: 1400px;
+  }
+  .browser{
+    position: relative;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--hairline-2);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    transform: rotate(-0.6deg);
+  }
+  .browser-chrome{
+    display:flex; align-items:center; gap: 14px;
+    height: 38px;
+    padding: 0 14px;
+    background: linear-gradient(180deg, #15151E, #101019);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .traffic{ display:flex; gap:6px; }
+  .traffic span{
+    width:11px; height:11px; border-radius:50%;
+    background: #2A2A36;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  .traffic span:nth-child(1){ background: #3a3a48; }
+  .traffic span:nth-child(2){ background: #3a3a48; }
+  .traffic span:nth-child(3){ background: #3a3a48; }
+  .url-bar{
+    flex:1;
+    height: 22px;
+    border-radius: 6px;
+    background: #0B0B12;
+    border: 1px solid var(--hairline);
+    display:flex; align-items:center; gap:8px;
+    padding: 0 10px;
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+  .url-bar svg{ width:11px; height:11px; color: var(--accent-2); }
+  .url-bar .path{ color: var(--text); }
+
+  .app{
+    display:grid;
+    grid-template-columns: 168px 1fr;
+    min-height: 360px;
+    background: #0C0C14;
+  }
+  .app-side{
+    border-right: 1px solid var(--hairline);
+    padding: 16px 12px;
+    display:flex; flex-direction:column; gap: 6px;
+  }
+  .app-side .me{
+    display:flex; align-items:center; gap:9px;
+    padding: 8px 8px;
+    margin-bottom: 10px;
+    border-radius: 9px;
+  }
+  .avatar{
+    width: 26px; height: 26px; border-radius: 50%;
+    background: linear-gradient(135deg, #6C63FF, #00E5CC);
+    color:#fff;
+    display:grid; place-items:center;
+    font-size: 11px; font-weight: 600;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08) inset;
+  }
+  .me-name{ font-size: 12.5px; font-weight: 600; }
+  .me-status{ font-size: 10.5px; color: var(--accent-2); display:flex; align-items:center; gap: 5px; }
+  .me-status::before{
+    content:""; width:6px; height:6px; border-radius:50%;
+    background: var(--accent-2);
+    box-shadow: 0 0 6px var(--accent-2);
+  }
+  .app-side .nav-item{
+    display:flex; align-items:center; gap: 9px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: default;
+  }
+  .app-side .nav-item svg{ width: 13px; height: 13px; }
+  .app-side .nav-item.active{
+    color: var(--text);
+    background: rgba(108,99,255,0.10);
+    box-shadow: inset 0 0 0 1px rgba(108,99,255,0.25);
+  }
+  .app-side .nav-item .count{
+    margin-left:auto; font-size: 10.5px; color: var(--muted-2);
+  }
+
+  .app-main{
+    padding: 16px 16px 18px;
+    min-width: 0;
+  }
+  .app-head{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 12px;
+  }
+  .app-head h3{ margin:0; font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .app-head .sub{ font-size: 11px; color: var(--muted-2); margin-top: 2px; }
+  .app-head .actions{ display:flex; gap: 6px; }
+  .icon-btn{
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    border: 1px solid var(--hairline);
+    background: #0E0E16;
+    display:grid; place-items:center;
+    color: var(--muted);
+  }
+  .icon-btn svg{ width: 12px; height: 12px; }
+  .icon-btn.primary{
+    background: var(--accent); border-color: transparent; color: #fff;
+  }
+
+  .cred-list{
+    display:flex; flex-direction:column; gap: 6px;
+  }
+  .cred{
+    display:grid;
+    grid-template-columns: 28px 1fr auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 9px 10px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    transition: background .15s, border-color .15s;
+  }
+  .cred:hover{ background: #0E0E17; border-color: var(--hairline); }
+  .cred-icon{
+    width: 28px; height: 28px; border-radius: 8px;
+    display:grid; place-items:center;
+    font-size: 11px; font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+  .cred-icon.c-blue   { background: linear-gradient(135deg, #2563EB, #3B82F6); }
+  .cred-icon.c-orange { background: linear-gradient(135deg, #F97316, #FB923C); }
+  .cred-icon.c-pink   { background: linear-gradient(135deg, #EC4899, #F472B6); }
+  .cred-icon.c-green  { background: linear-gradient(135deg, #10B981, #34D399); }
+  .cred-icon.c-purple { background: linear-gradient(135deg, #6C63FF, #8B7FFF); }
+  .cred-icon.c-yellow { background: linear-gradient(135deg, #CA8A04, #EAB308); }
+  .cred-meta{ min-width: 0; }
+  .cred-name{
+    font-size: 12.5px; font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+    white-space:nowrap; overflow:hidden; text-overflow: ellipsis;
+  }
+  .cred-user{
+    font-size: 10.5px; color: var(--muted-2); margin-top: 2px;
+    white-space:nowrap; overflow:hidden; text-overflow: ellipsis;
+  }
+  .cred-pass{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    min-width: 90px; text-align: right;
+  }
+  .cred-pass.revealed{ color: var(--text); letter-spacing: 0; }
+  .cred-eye{
+    width: 22px; height: 22px;
+    display:grid; place-items:center;
+    border-radius: 6px;
+    color: var(--muted-2);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: color .15s, background .15s, border-color .15s;
+  }
+  .cred-eye:hover{ color: var(--text); background: rgba(255,255,255,0.04); border-color: var(--hairline); }
+  .cred-eye.on{ color: var(--accent-2); background: rgba(0,229,204,0.08); border-color: rgba(0,229,204,0.3); }
+  .cred-eye svg{ width: 12px; height: 12px; }
+  .cred-tag{
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--muted);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--hairline);
+  }
+  .cred-tag.work{ color:#B7B0FF; border-color: rgba(108,99,255,0.35); background: rgba(108,99,255,0.08); }
+  .cred-tag.fin{  color:#00E5CC; border-color: rgba(0,229,204,0.3); background: rgba(0,229,204,0.06); }
+  .cred-tag.soc{  color:#F472B6; border-color: rgba(236,72,153,0.3); background: rgba(236,72,153,0.07); }
+
+  /* StatusFrame Swing overlay */
+  .swing{
+    position: absolute;
+    left: -36px; bottom: -32px;
+    width: 290px;
+    background: #1A1A1A;
+    border: 1px solid #2A2A2A;
+    border-radius: 6px;
+    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #E0E0E0;
+    transform: rotate(2deg);
+    overflow: hidden;
+  }
+  .swing-title{
+    background: linear-gradient(180deg, #2A2A2A, #1F1F1F);
+    height: 26px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 0 8px;
+    font-size: 11px;
+    color: #BBB;
+    border-bottom: 1px solid #0A0A0A;
+  }
+  .swing-title .t{
+    display:flex; align-items:center; gap:6px;
+  }
+  .swing-title .t svg{ width:11px; height:11px; color: var(--accent); }
+  .swing-title .win-btns{ display:flex; gap: 0; }
+  .swing-title .win-btns span{
+    width:18px; height:14px;
+    display:grid; place-items:center;
+    font-size: 11px; color:#888;
+  }
+  .swing-body{
+    padding: 14px 14px 14px;
+    font-size: 12px;
+  }
+  .swing-row{
+    display:flex; justify-content:space-between; padding: 3px 0;
+    border-bottom: 1px dashed #2A2A2A;
+  }
+  .swing-row:last-of-type{ border-bottom: 0; margin-bottom: 8px; }
+  .swing-row .k{ color:#888; }
+  .swing-row .v{ font-family:'JetBrains Mono',monospace; color:#FFF; font-size:11.5px; }
+  .swing-row .v.green{ color: #5BE49B; }
+  .swing-btns{
+    display:flex; gap:6px; margin-top: 10px;
+  }
+  .swing-btn{
+    flex: 1;
+    height: 26px;
+    font-size: 11.5px;
+    background: linear-gradient(180deg, #3A3A3A, #2A2A2A);
+    border: 1px solid #1A1A1A;
+    border-radius: 2px;
+    color: #E0E0E0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .swing-btn.primary{
+    background: linear-gradient(180deg, #5e56e0, #4a42c4);
+    border-color: #2d2890;
+    color: #fff;
+  }
+
+  @media (max-width: 980px){
+    .swing{ left: 8px; bottom: -28px; transform: rotate(1.5deg) scale(.92); }
+    .browser{ transform: rotate(-0.3deg); }
+  }
+  @media (max-width: 560px){
+    .swing{ display:none; }
+    .app{ grid-template-columns: 1fr; }
+    .app-side{ display:none; }
+  }
+
+  /* ─── TRUST BAR ──────────────────────────────────── */
+  .trustbar{
+    background: var(--surface);
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+    padding: 22px 0;
+  }
+  .trustbar-inner{
+    display:flex; flex-wrap:wrap; gap: 14px 36px;
+    justify-content: center; align-items: center;
+    color: var(--muted-2);
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 500;
+    text-align: center;
+  }
+  .trustbar-inner .item{ display:inline-flex; align-items:center; gap: 10px; }
+  .trustbar-inner .item svg{ width:13px; height:13px; color: var(--accent-2); }
+  .trustbar-inner .dot{ width:3px; height:3px; border-radius:50%; background: rgba(255,255,255,0.15); }
+
+  /* ─── SECTION SHELL ──────────────────────────────── */
+  section.s{ padding: 120px 0; position: relative; }
+  @media (max-width: 768px){ section.s{ padding: 84px 0; } }
+
+  .s-eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size: 12px; color: var(--accent);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .s-eyebrow::before{
+    content:""; width: 24px; height:1px; background: var(--accent);
+  }
+  .s-eyebrow.teal{ color: var(--accent-2); }
+  .s-eyebrow.teal::before{ background: var(--accent-2); }
+  h2.s-title{
+    margin: 0 0 16px;
+    font-size: clamp(32px, 4.4vw, 48px);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    text-wrap: balance;
+  }
+  .s-sub{
+    color: var(--muted);
+    font-size: 18px;
+    max-width: 600px;
+    margin: 0 0 64px;
+    text-wrap: pretty;
+  }
+  .s-head{ margin-bottom: 64px; }
+  .s-head.centered{ text-align:center; }
+  .s-head.centered .s-eyebrow{ justify-content:center; }
+  .s-head.centered .s-sub{ margin-left:auto; margin-right:auto; }
+
+  /* ─── COME FUNZIONA — timeline ───────────────────── */
+  .how-grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 28px;
+    position: relative;
+  }
+  .how-grid::before{
+    content: "";
+    position: absolute;
+    top: 32px;
+    left: 8%; right: 8%;
+    height: 1px;
+    background-image: linear-gradient(to right, rgba(108,99,255,0.4) 50%, transparent 0);
+    background-size: 8px 1px;
+    background-repeat: repeat-x;
+    z-index: 0;
+  }
+  @media (max-width: 880px){
+    .how-grid{ grid-template-columns: 1fr; gap: 36px; }
+    .how-grid::before{ display:none; }
+  }
+  .step{
+    position: relative; z-index: 1;
+    background: var(--bg);
+    padding: 4px 4px 0;
+  }
+  .step-num{
+    display:inline-flex; align-items:center; justify-content:center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--bg);
+    border: 1px solid rgba(108,99,255,0.35);
+    border-radius: 999px;
+    padding: 3px 10px;
+    margin-bottom: 18px;
+    letter-spacing: 0.04em;
+  }
+  .step-icon{
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(108,99,255,0.12), rgba(108,99,255,0.04));
+    border: 1px solid rgba(108,99,255,0.25);
+    display:grid; place-items:center;
+    color: var(--accent);
+    margin-bottom: 22px;
+    position: relative;
+  }
+  .step-icon svg{ width: 24px; height: 24px; }
+  .step h3{
+    margin: 0 0 10px;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.018em;
+  }
+  .step p{
+    margin: 0;
+    color: var(--muted);
+    font-size: 15.5px;
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+
+  /* ─── SICUREZZA ──────────────────────────────────── */
+  .sec-grid{
+    display:grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 64px;
+    align-items: start;
+  }
+  @media (max-width: 980px){ .sec-grid{ grid-template-columns: 1fr; gap: 48px; } }
+
+  .sec-copy p{
+    color: var(--muted);
+    font-size: 16.5px;
+    line-height: 1.75;
+    margin: 0 0 18px;
+    text-wrap: pretty;
+  }
+  .sec-copy strong{ color: var(--text); font-weight: 600; }
+
+  .keyflow{
+    margin-top: 28px;
+    padding: 22px 24px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,229,204,0.22);
+    background: rgba(0,229,204,0.035);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+  .keyflow .step-line{
+    display:flex; align-items:center; gap: 8px;
+    padding: 6px 0;
+  }
+  .keyflow .box{
+    display:inline-flex; align-items:center;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,229,204,0.25);
+    background: rgba(0,229,204,0.05);
+    color: var(--accent-2);
+    font-weight: 500;
+    font-size: 12.5px;
+  }
+  .keyflow .box.k{ color: #B7B0FF; border-color: rgba(108,99,255,0.3); background: rgba(108,99,255,0.05); }
+  .keyflow .arrow-row{
+    display:flex; flex-direction:column; align-items:flex-start;
+    padding: 6px 0 6px 14px;
+    color: var(--muted);
+    font-size: 12px;
+    border-left: 1px dashed rgba(0,229,204,0.3);
+    margin-left: 14px;
+  }
+  .keyflow .arrow-row .label{ font-size: 11px; color: var(--muted-2); }
+  .keyflow .target{
+    color: var(--muted);
+    font-size: 12.5px;
+    padding-left: 4px;
+  }
+
+  .badges{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 560px){ .badges{ grid-template-columns: 1fr; } }
+  .tbadge{
+    padding: 18px 18px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,229,204,0.22);
+    background: rgba(0,229,204,0.04);
+    transition: border-color .2s, background .2s, transform .2s;
+  }
+  .tbadge:hover{
+    border-color: rgba(0,229,204,0.45);
+    background: rgba(0,229,204,0.07);
+    transform: translateY(-2px);
+  }
+  .tbadge .pill{
+    display:inline-block;
+    font-family:'JetBrains Mono',monospace;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(0,229,204,0.08);
+    border: 1px solid rgba(0,229,204,0.3);
+    color: var(--accent-2);
+    margin-bottom: 12px;
+    letter-spacing: 0.02em;
+  }
+  .tbadge p{
+    margin: 0;
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+
+  .src-note{
+    margin-top: 28px;
+    padding-top: 22px;
+    border-top: 1px solid var(--hairline);
+    color: var(--muted-2);
+    font-size: 13.5px;
+    display:flex; align-items:center; gap: 10px;
+  }
+  .src-note svg{ width: 14px; height: 14px; color: var(--accent-2); flex-shrink: 0; }
+
+  /* ─── FEATURES ───────────────────────────────────── */
+  .features-grid{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+  @media (max-width: 880px){ .features-grid{ grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px){ .features-grid{ grid-template-columns: 1fr; } }
+
+  .fcard{
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-card);
+    padding: 28px;
+    transition: border-color .2s, transform .2s, background .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .fcard:hover{
+    border-color: var(--hairline-2);
+    transform: translateY(-3px);
+    background: #13131D;
+  }
+  .fcard::after{
+    content:"";
+    position:absolute; inset:0;
+    background: radial-gradient(400px circle at var(--mx,50%) var(--my,0%), rgba(108,99,255,0.08), transparent 50%);
+    opacity: 0;
+    transition: opacity .2s;
+    pointer-events: none;
+  }
+  .fcard:hover::after{ opacity: 1; }
+  .fcard-icon{
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    background: rgba(108,99,255,0.08);
+    border: 1px solid rgba(108,99,255,0.22);
+    display:grid; place-items:center;
+    color: var(--accent);
+    margin-bottom: 22px;
+  }
+  .fcard-icon svg{ width: 19px; height: 19px; }
+  .fcard h3{
+    margin: 0 0 8px;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  .fcard p{
+    margin: 0;
+    color: var(--muted);
+    font-size: 14.5px;
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+
+  /* ─── DOWNLOAD CTA ───────────────────────────────── */
+  .cta-final{
+    background: var(--bg-2);
+    padding: 100px 0;
+    position: relative;
+    overflow: hidden;
+    border-top: 1px solid var(--hairline);
+  }
+  .cta-final::before{
+    content:""; position:absolute; inset:0;
+    background-image: radial-gradient(rgba(255,255,255,0.045) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mask-image: radial-gradient(ellipse 60% 70% at 50% 50%, #000 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 50%, #000 30%, transparent 80%);
+  }
+  .cta-final::after{
+    content:""; position:absolute; left:50%; top:50%;
+    width: 700px; height: 700px;
+    transform: translate(-50%,-50%);
+    background: radial-gradient(circle, rgba(108,99,255,0.10), transparent 60%);
+    filter: blur(10px);
+    pointer-events:none;
+  }
+  .cta-final-inner{ position:relative; text-align:center; }
+  .cta-final h2{
+    margin: 0 0 14px;
+    font-size: clamp(36px, 5vw, 56px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    text-wrap: balance;
+  }
+  .cta-final .lead{
+    color: var(--muted);
+    font-size: 19px;
+    margin: 0 0 38px;
+    letter-spacing: -0.01em;
+  }
+  .reqs{
+    color: var(--muted-2);
+    font-size: 13px;
+    margin-top: 16px;
+  }
+  .assurances{
+    display:flex; flex-wrap:wrap; gap: 28px;
+    justify-content: center;
+    margin-top: 36px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .assurances span{ display:inline-flex; align-items:center; gap: 8px; }
+  .assurances span svg{ width:14px; height:14px; color: var(--accent-2); }
+
+  /* ─── FOOTER ─────────────────────────────────────── */
+  footer{
+    background: var(--bg-3);
+    border-top: 1px solid var(--hairline);
+    padding: 44px 0 36px;
+  }
+  .footer-row{
+    display:flex; justify-content:space-between; align-items:center;
+    gap: 24px; flex-wrap:wrap;
+    margin-bottom: 22px;
+  }
+  .footer-row .copyright{
+    color: var(--muted-2); font-size: 13.5px;
+    display:flex; align-items:center; gap: 12px;
+  }
+  .footer-row .copyright .brand-mark{ width:24px; height:24px; border-radius:6px; }
+  .footer-row .copyright .brand-mark svg{ width:12px; height:12px; }
+  .footer-links{
+    display:flex; gap: 24px;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .footer-links a{ transition: color .15s; }
+  .footer-links a:hover{ color: var(--text); }
+  .privacy-note{
+    color: var(--muted-2);
+    font-size: 12.5px;
+    text-align: center;
+    padding-top: 20px;
+    border-top: 1px solid var(--hairline);
+    font-style: italic;
+  }
+
+  /* ─── REVEAL ANIMATIONS ──────────────────────────── */
+  .reveal{
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity .55s ease-out, transform .55s ease-out;
+    transition-delay: var(--rd, 0ms);
+  }
+  .reveal.is-in{ opacity:1; transform: translateY(0); }
+  @media (prefers-reduced-motion: reduce){
+    .reveal{ opacity:1; transform:none; transition:none; }
+    html{ scroll-behavior:auto; }
+  }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+<script type="module" src="/src/main.tsx"></script>
+<!-- Lucide-style icons (inline sprite) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+    </symbol>
+    <symbol id="i-shield-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+    </symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>
+    </symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
+    </symbol>
+    <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>
+    </symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </symbol>
+    <symbol id="i-file-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M14 2v6h6"/><rect width="8" height="6" x="12" y="14" rx="1"/><path d="M14 14v-2a2 2 0 1 1 4 0v2"/>
+    </symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.859a10 10 0 0 1 14 0"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/>
+    </symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>
+    </symbol>
+    <symbol id="i-monitor-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/><rect width="6" height="4" x="9" y="7" rx="1"/><path d="M10.5 7V6a1.5 1.5 0 0 1 3 0v1"/>
+    </symbol>
+    <symbol id="i-laptop-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="9" height="14" x="13" y="6" rx="2"/><path d="M2 14h9"/><path d="M3 5h9"/><path d="M2 5v8a1 1 0 0 0 1 1h8"/><path d="M17 18h.01"/>
+    </symbol>
+    <symbol id="i-home-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 10.5V20a2 2 0 0 0 2 2h6"/><path d="m3 10.5 9-7 9 7"/><path d="M19 13c0 4-2.5 5.5-5.5 6.5a.83.83 0 0 1-.5 0C10 18.5 7.5 17 7.5 13v-3a.83.83 0 0 1 .5-.75c.83-.25 1.92-1 2.5-1.5a.83.83 0 0 1 1 0c.58.5 1.67 1.25 2.5 1.5a.83.83 0 0 1 .5.75z"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 5v14"/><path d="M5 12h14"/>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+    </symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+    </symbol>
+    <symbol id="i-github" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/>
+    </symbol>
+    <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+    </symbol>
+    <symbol id="i-bug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></symbol>
+    <symbol id="i-globe-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16.5 16.5C15 17.4 13.5 18 12 18a8 8 0 0 1-8-8c0-1.5.4-3 1.2-4.2"/><path d="M8 2.5A8 8 0 0 1 12 2a8 8 0 0 1 8 8c0 1.7-.5 3.3-1.4 4.6"/><path d="M2 2l20 20"/>
+    </symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ═══ NAVBAR ═══ -->
+<header class="nav" id="nav">
+  <div class="container nav-inner">
+    <a class="brand" href="#">
+      <span class="brand-mark"><svg><use href="#i-lock"/></svg></span>
+      <span>SecureLocalShare</span>
+    </a>
+    <nav class="nav-links" aria-label="Principale">
+      <a href="#come-funziona">Come funziona</a>
+      <a href="#sicurezza">Sicurezza</a>
+      <a href="#download">Download</a>
+      <a href="#download" class="nav-cta">
+        <svg width="12" height="12"><use href="#i-download"/></svg>
+        Scarica ora
+      </a>
+    </nav>
+  </div>
+</header>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="hero-bg" aria-hidden="true"></div>
+
+  <div class="container hero-inner">
+    <div class="hero-copy">
+      <span class="badge reveal">
+        <svg><use href="#i-lock"/></svg>
+        Offline-first
+        <span class="dot"></span>
+        Nessun cloud
+        <span class="dot"></span>
+        Open source
+      </span>
+
+      <h1 class="hero-h1 reveal" style="--rd:80ms">
+        Le tue password.<br/>
+        Sul tuo PC.<br/>
+        <span class="accent">Solo tue.</span>
+      </h1>
+
+      <p class="hero-sub reveal" style="--rd:160ms">
+        SecureLocalShare è un password manager che gira sul tuo computer di casa.
+        Nessun abbonamento, nessun server esterno, nessuna email di recupero.
+        Accedi alle tue credenziali da qualsiasi dispositivo della tua rete Wi-Fi.
+      </p>
+
+      <div class="hero-cta-row reveal" style="--rd:240ms">
+        <a href="#download" class="btn btn-primary">
+          <svg width="16" height="16"><use href="#i-download"/></svg>
+          Scarica per Windows
+          <span class="meta">v1.0 · ~45 MB</span>
+        </a>
+        <a href="#come-funziona" class="btn btn-ghost">
+          Come funziona
+          <svg width="14" height="14"><use href="#i-arrow-right"/></svg>
+        </a>
+      </div>
+
+      <div class="micro-note reveal" style="--rd:320ms">
+        <span><svg width="12" height="12" style="color:var(--accent-2)"><use href="#i-check"/></svg> Windows 10/11</span>
+        <span class="sep">·</span>
+        <span><svg width="12" height="12" style="color:var(--accent-2)"><use href="#i-check"/></svg> Java 21 incluso</span>
+        <span class="sep">·</span>
+        <span><svg width="12" height="12" style="color:var(--accent-2)"><use href="#i-check"/></svg> Nessuna installazione cloud</span>
+      </div>
+    </div>
+
+    <!-- DEVICE MOCKUP -->
+    <div class="mockup-wrap reveal" style="--rd:200ms">
+      <div class="browser" aria-hidden="true">
+        <div class="browser-chrome">
+          <div class="traffic"><span></span><span></span><span></span></div>
+          <div class="url-bar">
+            <svg><use href="#i-lock"/></svg>
+            <span>192.168.1.42:8443</span>
+            <span class="path" style="margin-left:auto; color:var(--muted)">/dashboard</span>
+          </div>
+        </div>
+        <div class="app">
+          <aside class="app-side">
+            <div class="me">
+              <div class="avatar">MR</div>
+              <div>
+                <div class="me-name">Marco R.</div>
+                <div class="me-status">LAN</div>
+              </div>
+            </div>
+            <div class="nav-item active">
+              <svg><use href="#i-key"/></svg> Password <span class="count">24</span>
+            </div>
+            <div class="nav-item">
+              <svg><use href="#i-file-lock"/></svg> LocalDrop <span class="count">12</span>
+            </div>
+            <div class="nav-item">
+              <svg><use href="#i-users"/></svg> Condivise <span class="count">3</span>
+            </div>
+            <div class="nav-item">
+              <svg><use href="#i-shield"/></svg> Sicurezza
+            </div>
+          </aside>
+          <div class="app-main">
+            <div class="app-head">
+              <div>
+                <h3>Le tue password</h3>
+                <div class="sub">24 credenziali · cifrate</div>
+              </div>
+              <div class="actions">
+                <button class="icon-btn" aria-label="Cerca"><svg><use href="#i-search"/></svg></button>
+                <button class="icon-btn primary" aria-label="Aggiungi"><svg><use href="#i-plus"/></svg></button>
+              </div>
+            </div>
+
+            <div class="cred-list" id="cred-list">
+              <!-- creds populated by JS so reveal toggle is stateful -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Swing StatusFrame overlay -->
+      <div class="swing" aria-hidden="true">
+        <div class="swing-title">
+          <span class="t"><svg><use href="#i-lock"/></svg> SecureLocalShare — Server</span>
+          <span class="win-btns"><span>—</span><span>▢</span><span>✕</span></span>
+        </div>
+        <div class="swing-body">
+          <div class="swing-row"><span class="k">Stato</span><span class="v green">● In esecuzione</span></div>
+          <div class="swing-row"><span class="k">IP LAN</span><span class="v">192.168.1.42</span></div>
+          <div class="swing-row"><span class="k">Porta</span><span class="v">8443</span></div>
+          <div class="swing-row"><span class="k">Sessioni</span><span class="v">2 attive</span></div>
+          <div class="swing-btns">
+            <button class="swing-btn primary">Avvia</button>
+            <button class="swing-btn">Chiudi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TRUST BAR ═══ -->
+<div class="trustbar">
+  <div class="container trustbar-inner">
+    <span class="item"><svg><use href="#i-lock"/></svg> Cifratura AES-256-GCM</span>
+    <span class="dot"></span>
+    <span class="item"><svg><use href="#i-globe-off"/></svg> Nessuna connessione internet</span>
+    <span class="dot"></span>
+    <span class="item"><svg><use href="#i-key"/></svg> Chiave mai trasmessa</span>
+    <span class="dot"></span>
+    <span class="item"><svg><use href="#i-check"/></svg> Zero abbonamenti</span>
+  </div>
+</div>
+
+<!-- ═══ COME FUNZIONA ═══ -->
+<section class="s" id="come-funziona">
+  <div class="container">
+    <div class="s-head centered">
+      <span class="s-eyebrow reveal">Come funziona</span>
+      <h2 class="s-title reveal" style="--rd:60ms">Funziona così</h2>
+      <p class="s-sub reveal" style="--rd:120ms">Tre passi. Poi dimentica che esiste — nel senso buono.</p>
+    </div>
+
+    <div class="how-grid">
+      <article class="step reveal">
+        <span class="step-num">01</span>
+        <div class="step-icon"><svg><use href="#i-monitor-lock"/></svg></div>
+        <h3>Installa sul tuo PC</h3>
+        <p>Scarica e avvia il <span class="mono" style="color:var(--text)">.exe</span> sul computer di casa. Al primo avvio crei la tua master password: è l'unica chiave che protegge tutto. Non esiste recupero — non ne hai bisogno se la ricordi.</p>
+      </article>
+
+      <article class="step reveal" style="--rd:120ms">
+        <span class="step-num">02</span>
+        <div class="step-icon"><svg><use href="#i-laptop-phone"/></svg></div>
+        <h3>Apri dal browser in LAN</h3>
+        <p>Dal telefono, dal tablet o da un altro PC nella stessa rete Wi-Fi, apri il browser e vai all'indirizzo del tuo PC. Trovi la tua dashboard con tutte le credenziali salvate.</p>
+      </article>
+
+      <article class="step reveal" style="--rd:240ms">
+        <span class="step-num">03</span>
+        <div class="step-icon"><svg><use href="#i-home-shield"/></svg></div>
+        <h3>Nessun dato esce dalla rete</h3>
+        <p>Le credenziali sono cifrate sul tuo disco. Il server gira in locale. Nessuna richiesta a server esterni, mai. Se spegni il router, smetti di esistere per chiunque non sia già nella tua LAN.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SICUREZZA ═══ -->
+<section class="s" id="sicurezza" style="background: linear-gradient(180deg, transparent, rgba(0,229,204,0.025), transparent);">
+  <div class="container">
+    <div class="s-head">
+      <span class="s-eyebrow teal reveal">Sicurezza</span>
+      <h2 class="s-title reveal" style="--rd:60ms">Costruito per non fidarsi di nessuno</h2>
+      <p class="s-sub reveal" style="--rd:120ms">Architettura zero-trust locale. Ecco cosa succede realmente ai tuoi dati.</p>
+    </div>
+
+    <div class="sec-grid">
+      <div class="sec-copy reveal">
+        <p>
+          <strong>La master password non viene mai trasmessa né salvata.</strong>
+          Viene usata esclusivamente per derivare una chiave di protezione tramite
+          PBKDF2 con 310.000 iterazioni, che cifra la vera chiave AES-256 nel file
+          <span class="mono" style="color:var(--accent-2)">vault.lks</span> sul tuo disco.
+        </p>
+        <p>
+          Cambiare password non re-cifra i tuoi dati: cambia solo il <em>"lucchetto"</em>
+          attorno alla chiave principale. I tuoi dati restano sempre accessibili con la
+          nuova password — senza dover toccare un singolo byte cifrato.
+        </p>
+
+        <div class="keyflow" aria-label="Diagramma derivazione chiavi">
+          <div class="step-line">
+            <span class="box">Master Password</span>
+          </div>
+          <div class="arrow-row">
+            <span>↓</span>
+            <span class="label">PBKDF2 · 310.000 iter · salt 16B</span>
+          </div>
+          <div class="step-line">
+            <span class="box k">Wrapping Key</span>
+          </div>
+          <div class="arrow-row">
+            <span>↓</span>
+            <span class="label">AES-256-GCM</span>
+          </div>
+          <div class="step-line">
+            <span class="box">Master Key</span>
+            <span class="target">←── cifra ──→  Tutti i dati</span>
+          </div>
+        </div>
+
+        <div class="src-note">
+          <svg><use href="#i-github"/></svg>
+          Il codice sorgente è consultabile. Nessuna backdoor, nessun analytics, nessun tracking.
+        </div>
+      </div>
+
+      <div class="badges">
+        <div class="tbadge reveal">
+          <span class="pill">AES-256-GCM</span>
+          <p>Cifratura autenticata per ogni campo sensibile.</p>
+        </div>
+        <div class="tbadge reveal" style="--rd:80ms">
+          <span class="pill">PBKDF2 · 310K iter</span>
+          <p>Derivazione chiave resistente a brute-force.</p>
+        </div>
+        <div class="tbadge reveal" style="--rd:160ms">
+          <span class="pill">HMAC-SHA256</span>
+          <p>Verifica master password senza esporre dati.</p>
+        </div>
+        <div class="tbadge reveal" style="--rd:240ms">
+          <span class="pill">ECDSA P-256</span>
+          <p>Firma digitale per il sistema di sblocco.</p>
+        </div>
+        <div class="tbadge reveal" style="--rd:320ms">
+          <span class="pill">JWT HS256</span>
+          <p>Autenticazione sessioni web in LAN.</p>
+        </div>
+        <div class="tbadge reveal" style="--rd:400ms">
+          <span class="pill">Zero Internet</span>
+          <p>Nessuna telemetria, nessun ping esterno.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FUNZIONALITÀ ═══ -->
+<section class="s" id="funzionalita">
+  <div class="container">
+    <div class="s-head centered">
+      <span class="s-eyebrow reveal">Funzionalità</span>
+      <h2 class="s-title reveal" style="--rd:60ms">Tutto quello che ti serve.<br/>Niente di più.</h2>
+    </div>
+
+    <div class="features-grid">
+      <article class="fcard reveal">
+        <div class="fcard-icon"><svg><use href="#i-key"/></svg></div>
+        <h3>Password Manager</h3>
+        <p>Salva username, email, password e note per ogni servizio. Generatore password integrato. Accesso in reveal su richiesta esplicita.</p>
+      </article>
+
+      <article class="fcard reveal" style="--rd:60ms">
+        <div class="fcard-icon"><svg><use href="#i-users"/></svg></div>
+        <h3>Condivisione LAN</h3>
+        <p>Più utenti sulla stessa installazione. Condividi credenziali e file con chi vuoi, revoca l'accesso in un click. Senza email, senza link esterni.</p>
+      </article>
+
+      <article class="fcard reveal" style="--rd:120ms">
+        <div class="fcard-icon"><svg><use href="#i-file-lock"/></svg></div>
+        <h3>LocalDrop</h3>
+        <p>Carica documenti cifrati fino a 1 GB. Accessibili da tutti i dispositivi in rete. Il contenuto non esce mai dal tuo disco.</p>
+      </article>
+
+      <article class="fcard reveal" style="--rd:180ms">
+        <div class="fcard-icon"><svg><use href="#i-shield-alert"/></svg></div>
+        <h3>Blocco progressivo</h3>
+        <p>Dopo 10 tentativi errati, blocco permanente. Sblocco con file firmato digitalmente dall'autore — impossibile da bypassare senza la chiave privata.</p>
+      </article>
+
+      <article class="fcard reveal" style="--rd:240ms">
+        <div class="fcard-icon"><svg><use href="#i-wifi"/></svg></div>
+        <h3>Multi-dispositivo in LAN</h3>
+        <p>Accedi da smartphone, tablet, laptop. Basta il browser. Nessuna app da installare sui dispositivi secondari.</p>
+      </article>
+
+      <article class="fcard reveal" style="--rd:300ms">
+        <div class="fcard-icon"><svg><use href="#i-refresh"/></svg></div>
+        <h3>Aggiornamenti automatici</h3>
+        <p>Aggiornamenti distribuiti via release diretta. L'app verifica la versione e si aggiorna silenziosamente.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ DOWNLOAD CTA ═══ -->
+<section class="cta-final" id="download">
+  <div class="container cta-final-inner">
+    <h2 class="reveal">Pronto a riprendere il controllo<br/>dei tuoi dati?</h2>
+    <p class="lead reveal" style="--rd:60ms">Gratuito. Locale. Tuo.</p>
+
+    <div class="reveal" style="--rd:140ms">
+      <a href="#" class="btn btn-primary btn-lg" id="dl-final">
+        <svg width="18" height="18"><use href="#i-download"/></svg>
+        Scarica SecureLocalShare
+        <span class="meta">Windows · v1.0</span>
+      </a>
+      <div class="reqs">Windows 10 / 11 · x64 · ~45 MB · Java 21 incluso nel pacchetto</div>
+    </div>
+
+    <div class="assurances reveal" style="--rd:220ms">
+      <span><svg><use href="#i-check"/></svg> Nessun account richiesto</span>
+      <span><svg><use href="#i-check"/></svg> Nessun abbonamento</span>
+      <span><svg><use href="#i-check"/></svg> Nessun cloud</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="container">
+    <div class="footer-row">
+      <div class="copyright">
+        <span class="brand-mark"><svg><use href="#i-lock"/></svg></span>
+        © 2026 SecureLocalShare — Tutti i diritti riservati
+      </div>
+      <div class="footer-links">
+        <a href="#"><svg width="13" height="13" style="vertical-align:-2px;margin-right:4px"><use href="#i-book"/></svg> Documentazione</a>
+        <a href="#"><svg width="13" height="13" style="vertical-align:-2px;margin-right:4px"><use href="#i-github"/></svg> GitHub</a>
+        <a href="#"><svg width="13" height="13" style="vertical-align:-2px;margin-right:4px"><use href="#i-bug"/></svg> Segnala un bug</a>
+      </div>
+    </div>
+    <div class="privacy-note">
+      Questa applicazione non raccoglie dati. Non esistono server a cui inviarli.
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ─── Sticky nav border on scroll ───────────────────
+  const nav = document.getElementById('nav');
+  const onScroll = () => nav.classList.toggle('is-scrolled', window.scrollY > 8);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // ─── Reveal on scroll ──────────────────────────────
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries){
+      if (e.isIntersecting){
+        e.target.classList.add('is-in');
+        io.unobserve(e.target);
+      }
+    }
+  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // ─── Credentials list (interactive reveal) ─────────
+  const creds = [
+    { initials:'GH', cls:'c-purple', name:'github.com',       user:'marco.rossi',          tag:'work', tagLabel:'Lavoro',   pass:'••••••••••••••', real:'aH7$pK2!nQ9wXz' },
+    { initials:'AM', cls:'c-orange', name:'amazon.it',        user:'marco.rossi@gmail.com', tag:'',    tagLabel:'Shopping', pass:'••••••••••••',    real:'PrimoOrdine2024!' },
+    { initials:'BP', cls:'c-blue',   name:'BancaPosta',       user:'IT22-7733-…',           tag:'fin', tagLabel:'Banca',    pass:'••••••••••••••••',real:'tQ4#mLp@2Xv9!nKr' },
+    { initials:'IG', cls:'c-pink',   name:'instagram.com',    user:'@marco.r',              tag:'soc', tagLabel:'Social',   pass:'••••••••••',      real:'gattoBianco7!' },
+    { initials:'SP', cls:'c-green',  name:'spotify.com',      user:'marco.rossi',           tag:'',    tagLabel:'Media',    pass:'••••••••',        real:'MusicaXte#1' },
+    { initials:'NF', cls:'c-yellow', name:'netflix.com',      user:'famigliarossi@…',       tag:'',    tagLabel:'Media',    pass:'••••••••••',      real:'serieTV-2024!' },
+  ];
+  const list = document.getElementById('cred-list');
+  list.innerHTML = creds.map((c, i) => `
+    <div class="cred" data-i="${i}">
+      <div class="cred-icon ${c.cls}">${c.initials}</div>
+      <div class="cred-meta">
+        <div class="cred-name">${c.name}</div>
+        <div class="cred-user">${c.user}</div>
+      </div>
+      <div class="cred-pass" data-mask="${c.pass}" data-real="${c.real}">${c.pass}</div>
+      <button class="cred-eye" aria-label="Mostra password" data-i="${i}">
+        <svg><use href="#i-eye"/></svg>
+      </button>
+    </div>
+  `).join('');
+
+  // toggle reveal
+  list.addEventListener('click', (e) => {
+    const btn = e.target.closest('.cred-eye');
+    if (!btn) return;
+    const row = btn.closest('.cred');
+    const pass = row.querySelector('.cred-pass');
+    const on = btn.classList.toggle('on');
+    btn.querySelector('use').setAttribute('href', on ? '#i-eye-off' : '#i-eye');
+    pass.classList.toggle('revealed', on);
+    pass.textContent = on ? pass.dataset.real : pass.dataset.mask;
+  });
+
+  // ─── Card hover spotlight ──────────────────────────
+  document.querySelectorAll('.fcard').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    });
+  });
+
+  // ─── Final download CTA: tiny acknowledge ──────────
+  document.getElementById('dl-final').addEventListener('click', (e) => {
+    e.preventDefault();
+    const btn = e.currentTarget;
+    const original = btn.innerHTML;
+    btn.innerHTML = '<svg width="18" height="18"><use href="#i-check"/></svg> Download avviato…';
+    btn.style.background = '#00C9B3';
+    setTimeout(() => { btn.innerHTML = original; btn.style.background = ''; }, 2200);
+  });
+</script>
+</body>
+</html>

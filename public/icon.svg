@@ -1,0 +1,57 @@
+<svg width="512" height="512" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="slsShield" x1="0.25" y1="0" x2="0.75" y2="1">
+      <stop offset="0" stop-color="#1f3a6b"></stop>
+      <stop offset="0.55" stop-color="#142a52"></stop>
+      <stop offset="1" stop-color="#0b1730"></stop>
+    </linearGradient>
+    <linearGradient id="slsRim" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#60a5fa"></stop>
+      <stop offset="1" stop-color="#2563eb"></stop>
+    </linearGradient>
+    <linearGradient id="slsBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4f9bff"></stop>
+      <stop offset="1" stop-color="#2563eb"></stop>
+    </linearGradient>
+    <mask id="slsKeyhole">
+      <rect x="40" y="40" width="20" height="20" rx="6.5" fill="#fff"></rect>
+      <circle cx="50" cy="48" r="2.6" fill="#000"></circle>
+      <path d="M50 48 L47.4 55 H52.6 Z" fill="#000"></path>
+    </mask>
+  </defs>
+
+  
+  <path d="M50 4 L85 17 V45 C85 69 69 86 50 95 C31 86 15 69 15 45 V17 Z" fill="url(#slsShield)" stroke="url(#slsRim)" stroke-width="2.5" stroke-linejoin="round"></path>
+
+  
+  <g stroke="#5b9dff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.95">
+    <path d="M40 45 H31 L26 38"></path>
+    <path d="M40 51 H24"></path>
+    <path d="M40 57 H29 L24 62"></path>
+    <path d="M44 61 L40 67 H35"></path>
+    <path d="M60 45 H69 L74 38"></path>
+    <path d="M60 51 H76"></path>
+    <path d="M60 57 H71 L76 62"></path>
+    <path d="M56 61 L60 67 H65"></path>
+    <path d="M44 39 L40 33 H35"></path>
+    <path d="M56 39 L60 33 H65"></path>
+  </g>
+
+  
+  <g fill="#bcd6ff">
+    <circle cx="25" cy="38" r="2.6"></circle>
+    <circle cx="23" cy="51" r="2.6"></circle>
+    <circle cx="23" cy="62" r="2.6"></circle>
+    <circle cx="34" cy="67" r="2.6"></circle>
+    <circle cx="75" cy="38" r="2.6"></circle>
+    <circle cx="77" cy="51" r="2.6"></circle>
+    <circle cx="77" cy="62" r="2.6"></circle>
+    <circle cx="66" cy="67" r="2.6"></circle>
+    <circle cx="34" cy="33" r="2.6"></circle>
+    <circle cx="66" cy="33" r="2.6"></circle>
+  </g>
+
+  
+  <path d="M43.5 42 V35.5 a6.5 6.5 0 0 1 13 0 V42" stroke="#7db4ff" stroke-width="3" stroke-linecap="round" fill="none"></path>
+  <rect x="40" y="40" width="20" height="20" rx="6.5" fill="url(#slsBody)" mask="url(#slsKeyhole)"></rect>
+</svg>
