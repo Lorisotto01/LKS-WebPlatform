@@ -24,7 +24,7 @@ export function Dashboard() {
   const load = async () => {
     setLoading(true);
     const [rel, dl] = await Promise.all([
-      supabase.from("releases").select("*").order("release_date", { ascending: false }),
+      supabase.from("releases").select("*").eq("is_active", true).order("release_date", { ascending: false }),
       supabase.from("downloads").select("*").order("downloaded_at", { ascending: false }).limit(10),
     ]);
     if (rel.error) toast.error("Caricamento release non riuscito.");

@@ -245,10 +245,29 @@ function AppMockup() {
 }
 
 function SiteFooter() {
+  // ⚠️ Sostituisci con l'URL reale del tuo repository pubblico.
+  const GITHUB_URL = "https://github.com/Lorisotto01/LKS-WebPlatform";
   const cols = [
-    { title: "Prodotto", links: ["Funzionalità", "Sicurezza", "Download", "Changelog"] },
-    { title: "Risorse", links: ["GitHub", "Documentazione", "Privacy", "Termini"] },
+    {
+      title: "Prodotto",
+      links: [
+        { label: "Funzionalità", to: "#funzionalita", kind: "anchor" as const },
+        { label: "Sicurezza", to: "#sicurezza", kind: "anchor" as const },
+        { label: "Download", to: "#download", kind: "anchor" as const },
+        { label: "Changelog", to: "/changelog", kind: "route" as const },
+      ],
+    },
+    {
+      title: "Risorse",
+      links: [
+        { label: "GitHub", to: GITHUB_URL, kind: "external" as const },
+        { label: "Documentazione", to: "/docs", kind: "route" as const },
+        { label: "Privacy", to: "/privacy", kind: "route" as const },
+        { label: "Termini", to: "/terms", kind: "route" as const },
+      ],
+    },
   ];
+  const cls = "text-sm text-muted-foreground transition-colors hover:text-foreground";
   return (
     <footer className="border-t border-border/50 bg-card/20">
       <div className="mx-auto grid max-w-6xl gap-10 px-6 py-12 sm:grid-cols-[1.5fr_1fr_1fr]">
@@ -262,31 +281,30 @@ function SiteFooter() {
           <div key={c.title}>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">{c.title}</p>
             <ul className="mt-3 space-y-2">
-              {c.links.map((l) =>
-                l === "Privacy" ? (
-                  <li key={l}>
-                    <Link
-                      to="/privacy"
-                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      {l}
+              {c.links.map((l) => (
+                <li key={l.label}>
+                  {l.kind === "route" ? (
+                    <Link to={l.to} className={cls}>
+                      {l.label}
                     </Link>
-                  </li>
-                ) : (
-                  <li key={l}>
-                    <span className="cursor-default text-sm text-muted-foreground transition-colors hover:text-foreground">
-                      {l}
-                    </span>
-                  </li>
-                )
-              )}
+                  ) : l.kind === "external" ? (
+                    <a href={l.to} target="_blank" rel="noreferrer" className={cls}>
+                      {l.label}
+                    </a>
+                  ) : (
+                    <a href={l.to} className={cls}>
+                      {l.label}
+                    </a>
+                  )}
+                </li>
+              ))}
             </ul>
           </div>
         ))}
       </div>
       <div className="border-t border-border/40">
         <p className="mx-auto max-w-6xl px-6 py-5 text-xs text-muted-foreground">
-          (c) {new Date().getFullYear()} SecureLocalShare - Lorenzo Sottocorno - v4.2.3
+          (c) {new Date().getFullYear()} SecureLocalShare - Lorenzo Sottocorno - v4.2.1
         </p>
       </div>
     </footer>
