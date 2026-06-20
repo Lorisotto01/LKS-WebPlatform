@@ -101,81 +101,27 @@ export function Dashboard() {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <main className="mx-auto max-w-4xl px-6 py-12">
-        {/* Greeting */}
-        <h1 className="text-3xl font-extrabold tracking-tight">
-          Ciao{name ? ` ${name}` : ""} <span className="align-middle">&#128075;</span>
-        </h1>
-        <p className="mt-1.5 text-muted-foreground">
-          Ecco l'ultima versione disponibile. Riscarica quando vuoi, l'eseguibile è sempre aggiornato.
-        </p>
-
-        {loading ? (
-          <DashboardSkeleton />
-        ) : !latest ? (
-          <p className="mt-10 rounded-xl border bg-card/60 p-8 text-center text-muted-foreground">
-            Nessuna release disponibile al momento.
-          </p>
-        ) : (
-          <>
-            {/* ---- Latest release hero ---- */}
-            <section className="border-brand-l mt-8 rounded-xl rounded-l-md border bg-card/70 p-6 shadow-card sm:p-7">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-gradient px-3 py-1 text-xs font-medium text-white">
-                  <Sparkles className="h-3.5 w-3.5" /> Ultima versione
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <MonitorDown className="h-3.5 w-3.5" /> Windows 10/11 - 64-bit
-                </span>
-              </div>
-
-              <div className="mt-4 flex items-baseline gap-3">
-                <span className="font-mono text-4xl font-bold tracking-tight">{latest.version}</span>
-                <span className="text-sm text-muted-foreground">
-                  Rilasciata il{" "}
-                  <span className="font-medium text-foreground">
-                    {new Date(latest.release_date).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" })}
-                  </span>
-                </span>
-              </div>
-
-              {latest.notes && (
-                <div className="mt-5 rounded-lg border border-border/60 bg-background/40 p-4">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
-                    Release notes
-                  </p>
-                  <ul className="space-y-1.5 text-sm">
-                    {latest.notes.split("\n").filter(Boolean).map((line, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="text-primary">&rsaquo;</span>
-                        <span>{line.replace(/^[-*]\s*/, "")}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="mt-5 flex flex-wrap items-center gap-3">
-                <Button
-                  size="lg"
-                  onClick={() => download(latest)}
-                  disabled={downloadingId === latest.id}
-                  className="bg-brand-gradient shadow-glow hover:opacity-90"
-                >
-                  <Download className="h-5 w-5" />
-                  {downloadingId === latest.id ? "Preparazione..." : "Scarica SecureLocalShare.exe"}
-                </Button>
-                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5" /> Link valido 10 minuti dopo il click
-                </span>
+      <main className="mx-auto max-w-6xl px-6 py-12">
+        <div className="grid gap-8 lg:grid-cols-[1fr_1.4fr]">
+          {/* ============ SX — Dati account ============ */}
+          <div className="order-2 space-y-6 lg:order-1">
+            {/* 1 — Email e nome */}
+            <section>
+              <h2 className="text-lg font-semibold">Dati account</h2>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <AccountField icon={Mail} label="Email" value={user?.email ?? "-"} />
+                <AccountField icon={User} label="Nome completo" value={name || "-"} />
               </div>
             </section>
 
-            {/* ---- Download history ---- */}
-            <section className="mt-10">
+            {/* 2 — Attivazione dispositivo */}
+            <ActivationCard />
+
+            {/* 3 — Versioni scaricate */}
+            <section>
               <div className="flex items-baseline justify-between">
-                <h2 className="text-lg font-semibold">I tuoi download</h2>
-                <span className="text-sm text-muted-foreground">{history.length} download - ultimi 10</span>
+                <h2 className="text-lg font-semibold">Versioni scaricate</h2>
+                <span className="text-sm text-muted-foreground">{history.length} · ultimi 10</span>
               </div>
               {history.length === 0 ? (
                 <p className="mt-3 rounded-lg border bg-card/40 p-5 text-sm text-muted-foreground">
@@ -196,7 +142,7 @@ export function Dashboard() {
                           {new Date(d.downloaded_at).toLocaleString("it-IT")}
                         </p>
                       </div>
-                      <Button variant="outline" size="sm" onClick={() => latest && download(latest)}>
+                      <Button variant="outline" size="sm" onClick={() => latest && download(latest)} disabled={!latest}>
                         <RefreshCw className="h-3.5 w-3.5" /> Riscarica
                       </Button>
                     </li>
@@ -205,52 +151,9 @@ export function Dashboard() {
               )}
             </section>
 
-            {/* ---- Previous versions ---- */}
-            {previous.length > 0 && (
-              <section className="mt-10">
-                <h2 className="text-lg font-semibold">Versioni precedenti</h2>
-                <ol className="relative mt-4 ml-2 space-y-4 border-l border-border/60 pl-6">
-                  {previous.map((r) => (
-                    <li key={r.id} className="relative">
-                      <span className="absolute -left-[1.94rem] top-4 h-3.5 w-3.5 rounded-full border-2 border-primary bg-background" />
-                      <div className="rounded-xl border bg-card/50 p-4 shadow-card transition-colors hover:border-primary/40">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <span className="font-mono text-sm font-semibold">{r.version}</span>
-                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            {new Date(r.release_date).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" })}
-                          </span>
-                          <Button variant="outline" size="sm" onClick={() => download(r)} disabled={downloadingId === r.id} className="ml-auto">
-                            <Download className="h-3.5 w-3.5" /> Scarica
-                          </Button>
-                        </div>
-                        {r.notes && (
-                          <ul className="mt-3 space-y-1 border-t border-border/40 pt-3 text-sm text-muted-foreground">
-                            {r.notes.split("\n").filter(Boolean).slice(0, 3).map((line, i) => (
-                              <li key={i} className="flex gap-2">
-                                <span className="text-primary">&rsaquo;</span>
-                                <span>{line.replace(/^[-*]\s*/, "")}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
-
-            {/* ---- Account ---- */}
-            <section className="mt-10">
-              <h2 className="text-lg font-semibold">Dati account</h2>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <AccountField icon={Mail} label="Email" value={user?.email ?? "-"} />
-                <AccountField icon={User} label="Nome completo" value={name || "-"} />
-              </div>
-
-              {/* GDPR — diritto all'oblio */}
-              <div className="mt-4 flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* 4 — Elimina account */}
+            <section>
+              <div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-destructive">Elimina account</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
@@ -269,10 +172,120 @@ export function Dashboard() {
                 </Button>
               </div>
             </section>
-          </>
-        )}
+          </div>
 
-        <ActivationCard />
+          {/* ============ DX — Release ============ */}
+          <div className="order-1 space-y-8 lg:order-2">
+            {/* Titolo */}
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight">
+                Ciao{name ? ` ${name}` : ""} <span className="align-middle">&#128075;</span>
+              </h1>
+              <p className="mt-1.5 text-muted-foreground">
+                Ecco l'ultima versione disponibile. Riscarica quando vuoi, l'eseguibile è sempre aggiornato.
+              </p>
+            </div>
+
+            {loading ? (
+              <DashboardSkeleton />
+            ) : !latest ? (
+              <p className="rounded-xl border bg-card/60 p-8 text-center text-muted-foreground">
+                Nessuna release disponibile al momento.
+              </p>
+            ) : (
+              <>
+                {/* Ultima versione */}
+                <section className="border-brand-l rounded-xl rounded-l-md border bg-card/70 p-6 shadow-card sm:p-7">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-gradient px-3 py-1 text-xs font-medium text-white">
+                      <Sparkles className="h-3.5 w-3.5" /> Ultima versione
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <MonitorDown className="h-3.5 w-3.5" /> Windows 10/11 - 64-bit
+                    </span>
+                  </div>
+
+                  <div className="mt-4 flex items-baseline gap-3">
+                    <span className="font-mono text-4xl font-bold tracking-tight">{latest.version}</span>
+                    <span className="text-sm text-muted-foreground">
+                      Rilasciata il{" "}
+                      <span className="font-medium text-foreground">
+                        {new Date(latest.release_date).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" })}
+                      </span>
+                    </span>
+                  </div>
+
+                  {latest.notes && (
+                    <div className="mt-5 rounded-lg border border-border/60 bg-background/40 p-4">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+                        Release notes
+                      </p>
+                      <ul className="space-y-1.5 text-sm">
+                        {latest.notes.split("\n").filter(Boolean).map((line, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-primary">&rsaquo;</span>
+                            <span>{line.replace(/^[-*]\s*/, "")}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <Button
+                      size="lg"
+                      onClick={() => download(latest)}
+                      disabled={downloadingId === latest.id}
+                      className="bg-brand-gradient shadow-glow hover:opacity-90"
+                    >
+                      <Download className="h-5 w-5" />
+                      {downloadingId === latest.id ? "Preparazione..." : "Scarica SecureLocalShare.exe"}
+                    </Button>
+                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Clock className="h-3.5 w-3.5" /> Link valido 10 minuti dopo il click
+                    </span>
+                  </div>
+                </section>
+
+                {/* Timeline versioni precedenti */}
+                {previous.length > 0 && (
+                  <section>
+                    <h2 className="text-lg font-semibold">Versioni precedenti</h2>
+                    <ol className="relative mt-4 ml-2 space-y-4 border-l border-border/60 pl-6">
+                      {previous.map((r) => (
+                        <li key={r.id} className="relative">
+                          <span className="absolute -left-[1.94rem] top-4 h-3.5 w-3.5 rounded-full border-2 border-primary bg-background" />
+                          <div className="rounded-xl border bg-card/50 p-4 shadow-card transition-colors hover:border-primary/40">
+                            <div className="flex flex-wrap items-center gap-3">
+                              <span className="font-mono text-sm font-semibold">{r.version}</span>
+                              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                {new Date(r.release_date).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" })}
+                              </span>
+                              <Button variant="outline" size="sm" onClick={() => download(r)} disabled={downloadingId === r.id} className="ml-auto">
+                                <Download className="h-3.5 w-3.5" /> Scarica
+                              </Button>
+                            </div>
+                            {r.notes && (
+                              <ul className="mt-3 space-y-1 border-t border-border/40 pt-3 text-sm text-muted-foreground">
+                                {r.notes.split("\n").filter(Boolean).slice(0, 3).map((line, i) => (
+                                  <li key={i} className="flex gap-2">
+                                    <span className="text-primary">&rsaquo;</span>
+                                    <span>{line.replace(/^[-*]\s*/, "")}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                )}
+              </>
+            )}
+          </div>
+        </div>
       </main>
     </div>
   );

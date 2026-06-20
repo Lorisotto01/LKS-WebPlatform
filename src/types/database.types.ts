@@ -49,6 +49,26 @@ export interface Database {
         };
         Relationships: [];
       };
+      reports: {
+        // v4.3.1 (0009): segnalazioni aperte dalla DesktopApp, gestite dall'admin.
+        Row: {
+          id: string; email: string | null; hwid: string | null;
+          tipo: "bug" | "idea" | "altro"; titolo: string; descrizione: string | null;
+          app_version: string | null; status: "aperta" | "in_lavorazione" | "chiusa";
+          admin_note: string | null; created_at: string; updated_at: string;
+        };
+        Insert: {
+          id?: string; email?: string | null; hwid?: string | null;
+          tipo?: "bug" | "idea" | "altro"; titolo: string; descrizione?: string | null;
+          app_version?: string | null; status?: "aperta" | "in_lavorazione" | "chiusa";
+          admin_note?: string | null; created_at?: string; updated_at?: string;
+        };
+        Update: {
+          status?: "aperta" | "in_lavorazione" | "chiusa"; admin_note?: string | null;
+          tipo?: "bug" | "idea" | "altro"; titolo?: string; descrizione?: string | null;
+        };
+        Relationships: [];
+      };
       activations: {
         Row: {
           id: string; email: string; activation_token: string; hwid: string | null;
@@ -74,6 +94,24 @@ export interface Database {
         Args: Record<PropertyKey, never>;
         Returns: undefined;
       };
+      // v4.3.1 (0009): apre una segnalazione (chiamata dalla DesktopApp).
+      open_report: {
+        Args: {
+          p_titolo: string; p_descrizione?: string | null; p_tipo?: string | null;
+          p_email?: string | null; p_hwid?: string | null; p_app_version?: string | null;
+        };
+        Returns: Json;
+      };
+      // v4.3.1 (0009): elenca le segnalazioni di un dispositivo.
+      list_my_reports: {
+        Args: { p_email?: string | null; p_hwid?: string | null };
+        Returns: Database["public"]["Tables"]["reports"]["Row"][];
+      };
+      // v4.3.1 (0009): conteggi download per versione (solo admin).
+      release_download_counts: {
+        Args: Record<PropertyKey, never>;
+        Returns: { version: string; total: number; unique_users: number }[];
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -84,3 +122,4 @@ export type Release = Database["public"]["Tables"]["releases"]["Row"];
 export type Registration = Database["public"]["Tables"]["registrations"]["Row"];
 export type Download = Database["public"]["Tables"]["downloads"]["Row"];
 export type Activation = Database["public"]["Tables"]["activations"]["Row"];
+export type Report = Database["public"]["Tables"]["reports"]["Row"];

@@ -13,14 +13,104 @@ Storico delle modifiche rilevanti del progetto, raggruppate per modulo:
 | **PATCH** | bugfix, allineamenti, rifiniture |
 
 Più interventi nella stessa sessione condividono la stessa versione, distinti per scope.
-Versione corrente: **4.2.2**.
+Versione corrente: **4.3.0**.
+
+---
+
+## [4.3.1] — 2026-06-20
+
+Pannello admin e Dashboard rivisti, più il backend delle segnalazioni. Da task ClickUp "BugFix v4.3.1"
+(eseguito lo scope `webplatform`; gli interventi `webapp` e `desktop` sono nelle rispettive lavorazioni).
+
+### `webplatform` — Pannello admin, segnalazioni e Dashboard
+
+- **Segnalazioni (backend)** — migrazione `0009_reports.sql`: tabella `reports` (tipo, titolo,
+  descrizione, app_version, hwid, email, status `aperta|in_lavorazione|chiusa`, nota admin) con RLS
+  admin-only. RPC condivise con la DesktopApp: `open_report` (apre una segnalazione, anon),
+  `list_my_reports` (elenco per dispositivo, anon) e `release_download_counts` (conteggi download per
+  versione, solo admin).
+- **`/admin` a 2 colonne** — SX pubblicazione release; DX **version tree** in timeline con
+  attiva/disattiva/elimina e **badge conteggio download** per versione. In fondo, **card Segnalazioni**
+  con filtro per stato, flusso di avanzamento (aperta → in lavorazione → chiusa) e nota interna.
+- **Dashboard a 2 colonne** — DX: titolo, ultima versione, timeline versioni precedenti. SX: dati
+  account in 4 blocchi verticali (email+nome, attivazione dispositivo, versioni scaricate, elimina account).
+- `database.types.ts`: aggiunti `reports` + le 3 RPC. Versione WebPlatform a **4.3.1**.
+
+**File** — Nuovi: `supabase/migrations/0009_reports.sql`. Modificati: `src/pages/AdminReleases.tsx`,
+`src/pages/Dashboard.tsx`, `src/types/database.types.ts`, `src/pages/Home.tsx`, `package.json`.
+
+**Verifica** — `tsc -b --force`: **OK**.
+
+## [4.3.0] — 2026-06-20
+
+Categorizzazione e struttura a cartelle del Local Drop, da task ClickUp "Categorizzare e strutturare
+Local Drop". In questa fase sono sviluppati gli scope `desktop` (backend) e `webapp` (frontend);
+lo scope `webplatform` della stessa versione resta da completare.
+
+### `desktop` — Categorie tipizzate, cartelle e compressione del Local Drop
+
+- **Categorie tipizzate**: ogni categoria ha un tipo esclusivo `CREDENZIALE` o `FILE`, scelto alla
+  creazione e modificabile solo se la categoria non ha associazioni. Le credenziali usano le
+  categorie `CREDENZIALE`, i file del Local Drop quelle `FILE`.
+- **File categorizzabili**: i file del Local Drop possono avere una categoria (di tipo `FILE`) e una
+  collocazione in cartella, indipendenti e opzionali.
+- **Cartelle gerarchiche**: nuovo modello cartella (nome + colore, per-utente) con gerarchia fino a
+  **root + 3 livelli** di annidamento; una cartella può contenere sottocartelle e file. Cancellazione
+  consentita solo a cartella vuota.
+- **Condivisione per-file con visibilità derivata**: si condividono i singoli file; il destinatario
+  vede le cartelle antenate del file condiviso ma al loro interno **solo i file effettivamente
+  condivisi** (il resto resta invisibile).
+- **Compressione intelligente delle cartelle** (in-place, ricorsiva, con conferma + log): decifra →
+  comprime il contenuto per tipo di file → ricifra, **sostituendo gli originali**. Tre livelli a
+  **target di riduzione** — ⚡ Fast (0-30%), ⚖️ Balanced (30-50%), 🔥 Aggressive (50-95%). Tecniche
+  per tipo: immagini JPEG via `ImageIO` (qualità + downscale, sempre disponibile), PNG/immagini via
+  `pngquant`/`cwebp` (conversione WebP) se presenti, video via `ffmpeg` (H265/CRF/scale), PDF via
+  `Ghostscript`; **fallback**: se un tool esterno manca, il file viene saltato. La compressione può
+  cambiare formato/estensione (es. PNG→WebP, video→H265/MP4); se il risultato non è più piccolo,
+  l'originale è mantenuto. Tipi già compressi o testuali (docx/xlsx/zip/txt/json/csv) sono saltati
+  (compressione lossless del testo rinviata).
+- **Endpoint REST**: `categories` (campo `tipo` + filtro `?tipo=`), `folders` (CRUD + `move` +
+  `compress`), `files` (`folderId`/`categoriaId` su upload, `PUT /{id}/meta`).
+- Versione DesktopApp a **4.3.0** (`pom.xml`, `AppVersion.FALLBACK`).
+
+> Nota: la rimozione dell'hardware_id da Supabase (prevista nel task) è **rinviata** a una fase
+> successiva e non è inclusa in questo scope.
+
+### `webapp` — Categorie tipizzate e Local Drop a cartelle
+
+Allineamento del frontend al contratto backend 4.3.0 (nessuna modifica al backend; consumo delle
+API esistenti `categories`/`folders`/`files`).
+
+- **`/categories`**: la modale di creazione/modifica ha un **selettore di tipo** (Credenziali /
+  Documenti); il tipo non è modificabile se la categoria ha associazioni. **Due palette distinte**
+  (credenziali fredde/viola, documenti caldi/diversi). Le card mostrano un **badge di tipo** e il
+  **numero di associazioni** (credenziali per le `CREDENZIALE`, documenti per le `FILE`), più filtro
+  per tipo e ricerca.
+- **`/localdrop`**: vista ad **albero di cartelle** con apertura/chiusura **a scomparsa al click
+  sulla riga** (nessun tasto "visualizza" sulle cartelle). Ogni cartella ha azioni dedicate:
+  **aggiungi documenti** (upload nella cartella), **nuova sottocartella** (disabilitata oltre i 3
+  livelli), **comprimi**, rinomina/colore, elimina. **Colore cartella** scelto con color-picker
+  libero (= colore dell'icona). I file mostrano **badge categoria** e un'azione per **assegnare
+  categoria/cartella** (`PUT /files/{id}/meta`).
+- **Flusso compressione**: modale che chiede il **livello** (⚡ Fast / ⚖️ Balanced / 🔥 Aggressive con
+  i target di riduzione), avvisa che l'operazione **sostituisce gli originali** ed è irreversibile, poi
+  mostra il **report** (byte iniziali→finali, % risparmio, elaborati/saltati, dettagli).
+- Nuovo `folderService`, `utils/palettes.ts`; `fileService.upload` con `folderId`/`categoriaId` e
+  `setMeta`; `categoryService.list(tipo?)`; `interface/types.ts` allineato (`tipo`, `FolderDto`,
+  `CompressionReportDto`, …). Versione Web App a **4.3.0** (`package.json`, `Costant.VERSION`).
+
+**File** — Nuovi: `src/service/folderService.ts`, `src/utils/palettes.ts`. Modificati:
+`src/interface/types.ts`, `src/service/categoryService.ts`, `src/service/fileService.ts`,
+`src/pages/Categories.tsx`, `src/pages/LocalDrop.tsx`, `src/pages/TextFile.tsx`, `package.json`,
+`src/utils/Costant.ts`.
+
+**Verifica** — `tsc -b`: **OK**; `vite build`: **OK** (JS 304 kB).
 
 ---
 
 ## [4.2.3] — 2026-06-20
 
-Rifiniture WebPlatform da task ClickUp "Modifiche Da fare" (eseguito lo scope `webplatform`;
-gli interventi `desktop` e `webapp` della stessa versione restano da completare).
+Interventi da task ClickUp "Modifiche Da fare" (eseguiti gli scope `webplatform`, `webapp` e `desktop`).
 
 ### `webplatform` — Dashboard, navigazione e documentazione
 
@@ -36,6 +126,44 @@ gli interventi `desktop` e `webapp` della stessa versione restano da completare)
 `src/pages/Home.tsx`, `package.json`.
 
 **Verifica** — `tsc -b --force`: **OK**.
+
+### `webapp` — Stato host nella pagina di scelta utente
+
+La pagina di scelta utente (pre-login) ora rileva lo stato del dispositivo host interrogando
+`/api/system/status` (endpoint non pubblico → riporta lo stato reale anche senza token) e distingue:
+
+- **DesktopApp non connessa**: microservizi attivi ma vault bloccato / accesso non effettuato
+  (`401 VAULT_LOCKED` o `503 HOST_LOCKED`) → card informativa che avvisa che *la DesktopApp non ha
+  effettuato l'accesso e quindi non è utilizzabile*, con pulsante **Riprova**.
+- **Host non raggiungibile**: nessuna risposta dai microservizi (DesktopApp spenta) → card dedicata.
+- **Host pronto**: elenco profili normale (comportamento invariato).
+
+Indicatore di stato nel footer coerente con lo stato rilevato (verde/giallo/rosso). Nessuna
+modifica al backend: il rilevamento sfrutta i codici di errore già esposti dal `JwtFilter`.
+Versione Web App allineata a **4.2.3** (`package.json`, `Costant.VERSION` di default).
+
+**File** — Modificati: `src/pages/UserPicker.tsx`, `package.json`, `src/utils/Costant.ts`.
+
+**Verifica** — `tsc -b`: **OK**; `vite build`: **OK** (JS 285.9 kB).
+
+### `desktop` — Switch tema rimosso e backend affidabile
+
+- **Switch "Tema" rimosso** dal pannello: i campioni colore salvavano `environment.theme` ma
+  nessuno lo leggeva (la palette è fissa nelle costanti di `Ui`), quindi non cambiavano nulla.
+  Tolti dalla UI insieme ai metodi morti `themeSwatches()`/`swatch()`.
+- **Avvio/arresto backend robusto** (`BackendManager`): **pre-check della porta** prima dell'avvio
+  (niente più crash `Port 9507 already in use`), **pulizia del contesto su fallimento** (eliminato
+  il mezzo-stato che impallava l'app) e **double-check reale** dopo start/stop (contesto attivo /
+  porta liberata) invece di fidarsi della sola chiamata. Ogni transizione logga "in corso" e l'esito.
+- **Stop off-EDT**: l'arresto del backend gira ora in background come l'avvio (`ManagerFrame`), così
+  la UI non si congela durante lo shutdown di Tomcat.
+- Versione DesktopApp a **4.2.3** (`pom.xml`, `AppVersion.FALLBACK`).
+
+**File** — Modificati: `logistics/service/BackendManager.java`, `host/ManagerFrame.java`,
+`pom.xml`, `common/AppVersion.java`.
+
+**Verifica** — Build non eseguita in sessione (no Maven/JDK 21): review statica; `BackendManager`
+riscritto pulito e `ManagerFrame` verificato integro (graffe bilanciate, NUL rimossi).
 
 ## [4.2.2] — 2026-06-19
 
