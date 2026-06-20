@@ -232,7 +232,7 @@ function AppMockup() {
             <LogoMark className="h-5 w-5" />
             <div className="leading-tight">
               <div className="text-[11px] font-semibold">SecureLocalShare</div>
-              <div className="text-[9px] text-muted-foreground">v4.2.2 · LAN</div>
+              <div className="text-[9px] text-muted-foreground">v4.2.3 · LAN</div>
             </div>
           </div>
           <div className="h-px bg-border/60" />
@@ -409,7 +409,7 @@ function SiteFooter() {
       </div>
       <div className="border-t border-border/40">
         <p className="mx-auto max-w-6xl px-6 py-5 text-xs text-muted-foreground">
-          (c) {new Date().getFullYear()} SecureLocalShare - Lorenzo Sottocorno - v4.2.1
+          (c) {new Date().getFullYear()} SecureLocalShare - Lorenzo Sottocorno - v4.2.3
         </p>
       </div>
     </footer>

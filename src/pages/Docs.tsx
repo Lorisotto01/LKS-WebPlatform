@@ -23,7 +23,7 @@ export function Docs() {
         {/* Indice */}
         <nav className="mt-6 rounded-xl border bg-card/40 p-4 text-sm">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">Indice</p>
-          <ol className="grid gap-1.5 sm:grid-cols-2">
+          <ol className="flex flex-col gap-1.5">
             {[
               ["#cos-e", "1. Cos'è e come funziona"],
               ["#requisiti", "2. Requisiti"],

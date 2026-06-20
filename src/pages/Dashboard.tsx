@@ -209,24 +209,35 @@ export function Dashboard() {
             {previous.length > 0 && (
               <section className="mt-10">
                 <h2 className="text-lg font-semibold">Versioni precedenti</h2>
-                <ul className="mt-4 divide-y rounded-lg border bg-card/40">
+                <ol className="relative mt-4 ml-2 space-y-4 border-l border-border/60 pl-6">
                   {previous.map((r) => (
-                    <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                      <span className="font-mono text-sm font-semibold text-muted-foreground">{r.version}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(r.release_date).toLocaleDateString("it-IT")}
-                      </span>
-                      {r.notes && (
-                        <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-                          {r.notes.split("\n")[0]}
-                        </span>
-                      )}
-                      <Button variant="outline" size="sm" onClick={() => download(r)} disabled={downloadingId === r.id} className="ml-auto">
-                        <Download className="h-3.5 w-3.5" /> Scarica
-                      </Button>
+                    <li key={r.id} className="relative">
+                      <span className="absolute -left-[1.94rem] top-4 h-3.5 w-3.5 rounded-full border-2 border-primary bg-background" />
+                      <div className="rounded-xl border bg-card/50 p-4 shadow-card transition-colors hover:border-primary/40">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className="font-mono text-sm font-semibold">{r.version}</span>
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {new Date(r.release_date).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" })}
+                          </span>
+                          <Button variant="outline" size="sm" onClick={() => download(r)} disabled={downloadingId === r.id} className="ml-auto">
+                            <Download className="h-3.5 w-3.5" /> Scarica
+                          </Button>
+                        </div>
+                        {r.notes && (
+                          <ul className="mt-3 space-y-1 border-t border-border/40 pt-3 text-sm text-muted-foreground">
+                            {r.notes.split("\n").filter(Boolean).slice(0, 3).map((line, i) => (
+                              <li key={i} className="flex gap-2">
+                                <span className="text-primary">&rsaquo;</span>
+                                <span>{line.replace(/^[-*]\s*/, "")}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     </li>
                   ))}
-                </ul>
+                </ol>
               </section>
             )}
 

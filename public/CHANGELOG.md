@@ -17,6 +17,26 @@ Versione corrente: **4.2.2**.
 
 ---
 
+## [4.2.3] — 2026-06-20
+
+Rifiniture WebPlatform da task ClickUp "Modifiche Da fare" (eseguito lo scope `webplatform`;
+gli interventi `desktop` e `webapp` della stessa versione restano da completare).
+
+### `webplatform` — Dashboard, navigazione e documentazione
+
+- **Versioni precedenti** (Dashboard): ora mostrate come **timeline verticale con card** — pallino
+  sulla linea, versione, data estesa, note di rilascio e pulsante di download, in tema col layout.
+- **Scroll-to-top**: nuovo componente `ScrollToTop` in `App.tsx`. Ad ogni cambio di route (redirect
+  inclusi) la vista torna in cima. Gli anchor della stessa pagina (footer, indice `/docs`) restano invariati.
+- **Indice documentazione** (`/docs`): disposto in **colonna verticale** su tutti gli schermi
+  (rimosso il layout a 2 colonne su tablet/desktop).
+- Versione WebPlatform a **4.2.3** (`package.json`, footer).
+
+**File** — Modificati: `src/pages/Dashboard.tsx`, `src/App.tsx`, `src/pages/Docs.tsx`,
+`src/pages/Home.tsx`, `package.json`.
+
+**Verifica** — `tsc -b --force`: **OK**.
+
 ## [4.2.2] — 2026-06-19
 
 Attivazione del dispositivo nella DesktopApp (gate di licenza) e rifiniture della WebPlatform.

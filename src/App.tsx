@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { isSupabaseConfigured } from "./lib/supabase";
@@ -16,11 +17,22 @@ import { Terms } from "./pages/Terms";
 import { Docs } from "./pages/Docs";
 import { Changelog } from "./pages/Changelog";
 
+// Ad ogni cambio di route (redirect inclusi) riporta la vista in cima alla pagina.
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname]);
+  return null;
+}
+
 export default function App() {
   if (!isSupabaseConfigured) return <SetupRequired />;
 
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
@@ -38,6 +50,7 @@ export default function App() {
         <Route path="/admin" element={<AdminReleases />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
