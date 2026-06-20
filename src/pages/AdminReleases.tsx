@@ -102,7 +102,7 @@ export function AdminReleases() {
       return toast.error("Per attivare la release servono SHA-256 (auto) e firma Ed25519.");
     setBusy(true);
     try {
-      const objectPath = file.name;
+      const objectPath = `${version.trim().replace("v", "")}/${file.name}`;
       const up = await supabase.storage.from(RELEASES_BUCKET)
         .upload(objectPath, file, { upsert: true, contentType: "application/octet-stream" });
       if (up.error) throw up.error;

@@ -103,79 +103,8 @@ export function Dashboard() {
       <Navbar />
       <main className="mx-auto max-w-6xl px-6 py-12">
         <div className="grid gap-8 lg:grid-cols-[1fr_1.4fr]">
-          {/* ============ SX — Dati account ============ */}
-          <div className="order-2 space-y-6 lg:order-1">
-            {/* 1 — Email e nome */}
-            <section>
-              <h2 className="text-lg font-semibold">Dati account</h2>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <AccountField icon={Mail} label="Email" value={user?.email ?? "-"} />
-                <AccountField icon={User} label="Nome completo" value={name || "-"} />
-              </div>
-            </section>
-
-            {/* 2 — Attivazione dispositivo */}
-            <ActivationCard />
-
-            {/* 3 — Versioni scaricate */}
-            <section>
-              <div className="flex items-baseline justify-between">
-                <h2 className="text-lg font-semibold">Versioni scaricate</h2>
-                <span className="text-sm text-muted-foreground">{history.length} · ultimi 10</span>
-              </div>
-              {history.length === 0 ? (
-                <p className="mt-3 rounded-lg border bg-card/40 p-5 text-sm text-muted-foreground">
-                  Nessun download registrato. Scarica l'ultima versione per iniziare.
-                </p>
-              ) : (
-                <ul className="mt-4 space-y-2.5">
-                  {history.map((d) => (
-                    <li key={d.id} className="flex items-center gap-4 rounded-lg border bg-card/50 px-4 py-3">
-                      <span className="grid h-9 w-9 place-items-center rounded-md bg-primary/10 text-primary">
-                        <Download className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium">
-                          {d.version} <span className="text-muted-foreground">- SecureLocalShare.exe</span>
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {new Date(d.downloaded_at).toLocaleString("it-IT")}
-                        </p>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={() => latest && download(latest)} disabled={!latest}>
-                        <RefreshCw className="h-3.5 w-3.5" /> Riscarica
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            {/* 4 — Elimina account */}
-            <section>
-              <div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-destructive">Elimina account</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Rimuove definitivamente i tuoi dati (registrazione, download, attivazioni). Operazione irreversibile.
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={deleteAccount}
-                  disabled={deleting}
-                  className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  {deleting ? "Eliminazione…" : "Elimina account"}
-                </Button>
-              </div>
-            </section>
-          </div>
-
-          {/* ============ DX — Release ============ */}
-          <div className="order-1 space-y-8 lg:order-2">
+          {/* ============ SX — Release ============ */}
+          <div className="order-1 space-y-8 lg:order-1">
             {/* Titolo */}
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight">
@@ -284,6 +213,77 @@ export function Dashboard() {
                 )}
               </>
             )}
+          </div>
+
+          {/* ============ DX — Dati account ============ */}
+          <div className="order-2 space-y-6 lg:order-2">
+            {/* 1 — Email e nome */}
+            <section>
+              <h2 className="text-lg font-semibold">Dati account</h2>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <AccountField icon={Mail} label="Email" value={user?.email ?? "-"} />
+                <AccountField icon={User} label="Nome completo" value={name || "-"} />
+              </div>
+            </section>
+
+            {/* 2 — Attivazione dispositivo */}
+            <ActivationCard />
+
+            {/* 3 — Versioni scaricate */}
+            <section>
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-lg font-semibold">Versioni scaricate</h2>
+                <span className="text-sm text-muted-foreground">{history.length} · ultimi 10</span>
+              </div>
+              {history.length === 0 ? (
+                <p className="mt-3 rounded-lg border bg-card/40 p-5 text-sm text-muted-foreground">
+                  Nessun download registrato. Scarica l'ultima versione per iniziare.
+                </p>
+              ) : (
+                <ul className="mt-4 space-y-2.5">
+                  {history.map((d) => (
+                    <li key={d.id} className="flex items-center gap-4 rounded-lg border bg-card/50 px-4 py-3">
+                      <span className="grid h-9 w-9 place-items-center rounded-md bg-primary/10 text-primary">
+                        <Download className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">
+                          {d.version} <span className="text-muted-foreground">- SecureLocalShare.exe</span>
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {new Date(d.downloaded_at).toLocaleString("it-IT")}
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => latest && download(latest)} disabled={!latest}>
+                        <RefreshCw className="h-3.5 w-3.5" /> Riscarica
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            {/* 4 — Elimina account */}
+            <section>
+              <div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-destructive">Elimina account</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Rimuove definitivamente i tuoi dati (registrazione, download, attivazioni). Operazione irreversibile.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={deleteAccount}
+                  disabled={deleting}
+                  className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {deleting ? "Eliminazione…" : "Elimina account"}
+                </Button>
+              </div>
+            </section>
           </div>
         </div>
       </main>
