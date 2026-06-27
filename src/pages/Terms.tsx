@@ -24,9 +24,9 @@ export function Terms() {
 
         <Section title="2. Licenza d'uso">
           <p>
-            SecureLocalShare è un'applicazione open source. Ti è concessa una licenza personale, non esclusiva e non
-            trasferibile per installare e utilizzare l'applicazione. L'eventuale licenza open source del codice
-            sorgente prevale per quanto riguarda i diritti sul codice.
+            SecureLocalShare è un'applicazione proprietaria. Ti è concessa una licenza personale, non esclusiva e non
+            trasferibile per installare e utilizzare l'applicazione su un dispositivo attivato. Il codice sorgente
+            resta riservato e tutti i diritti sono riservati all'autore.
           </p>
         </Section>
 

@@ -13,14 +13,185 @@ Storico delle modifiche rilevanti del progetto, raggruppate per modulo:
 | **PATCH** | bugfix, allineamenti, rifiniture |
 
 Più interventi nella stessa sessione condividono la stessa versione, distinti per scope.
-Versione corrente: **4.3.0**.
+Versione corrente: **4.3.5**.
+
+---
+
+## [4.3.5] — 2026-06-27
+
+Migliorie al flusso di creazione e gestione delle segnalazioni (issue). Da task ClickUp "Migliorie Report
+Issue v4.3.5", scope `desktop` + `webplatform`. Ridisegnato il frame delle segnalazioni della DesktopApp,
+aggiunti gli allegati (screenshot) end-to-end e corretto un bug di fuso orario.
+
+### `desktop` — frame Segnalazioni
+
+- **Nuovo layout del form**: prima riga divisa in colonne (titolo 7/12, tipologia 5/12); seconda riga con
+  area di testo a 10 righe scorrevole ma non espandibile e a capo automatico; terza riga con area di upload
+  (stile `unlock.lks`) per allegare uno screenshot.
+- **Tipologie**: `Implementazione, Bug, Altro` (sostituisce `Idea` con `Implementazione`).
+- **Bottone "Apri segnalazione" ridimensionato** (font e padding più compatti).
+- **Refresh automatico** della tabella delle segnalazioni ad ogni (ri)apertura della finestra.
+- **Dialog di dettaglio**: doppio click su una riga apre un riepilogo della segnalazione (titolo, tipologia,
+  stato, aperto il, documenti allegati, descrizione, note di lavorazione dell'autore).
+- **Fix fuso orario**: l'orario di creazione viene convertito da UTC al fuso locale (risolve lo scarto di -2h).
+
+### `desktop` — `ReportService`
+
+- `open(...)` ora restituisce l'id della segnalazione creata; nuovo `uploadAttachment(...)` che carica lo
+  screenshot nel bucket `report-attachments` e lo registra via RPC `attach_report_file`.
+- `listMine(...)` legge anche gli allegati (la RPC `list_my_reports` ora restituisce gli allegati per ogni
+  segnalazione).
+
+### `webplatform` — backend (migration `0012`)
+
+- Tipologia segnalazioni: `idea` → `implementazione` (CHECK aggiornato + migrazione dei dati storici).
+- Nuova tabella `report_attachments` + bucket storage privato `report-attachments` (insert anonimo, lettura
+  solo admin) e RPC `attach_report_file`.
+- `open_report` accetta `implementazione`; `list_my_reports` include gli allegati.
+
+### `webplatform` — pannello admin
+
+- **`/admin/segnalazioni`**: tipologia `Implementazione` (al posto di `Idea`) e sezione **Documenti allegati**
+  con apertura degli screenshot tramite signed URL.
+
+---
+
+## [4.3.4] — 2026-06-27
+
+Migliorie routing e contenuti della WebPlatform. Da task ClickUp "Migliorie Routing WP e WebPlatform
+v4.3.4", scope `webplatform`. Rimossi i riferimenti al progetto come open source (prodotto reso privato),
+aggiunte nuove pagine pubbliche, ristrutturato il pannello admin e arricchita la dashboard utente.
+
+### `webplatform` — landing e pagine pubbliche
+
+- **Rimozione "open source"**: eliminato ogni riferimento (hero, feature list, footer, Termini, meta
+  description). Il prodotto è ora presentato come **privato/proprietario**; rimosso il link a GitHub.
+- **Nuove pagine** collegate dall'header: `/chi-sono` (profilo autore con foto, biografia e card contatti,
+  **editabile da admin** via Supabase), `/funzionalita` (showcase a righe alternate di DesktopApp e WebApp),
+  `/sicurezza` (perché è sicuro, **cause/effetti dei blocchi ENV_LOCK e PERMANENT_LOCK**, tutti i flussi di
+  blocco, elenco delle uniche richieste che usano Internet), `/recensioni` (recensioni raggruppate per versione).
+- **Docs** (`/docs`): aggiunte le procedure passo-passo per risolvere ENV_LOCK (recupero con master password,
+  che azzera le credenziali) e PERMANENT_LOCK (sblocco con `unlock.lks` firmato dall'autore).
+
+### `webplatform` — pannello admin in 4 tab
+
+- **`/admin/release`**: pubblicazione release + albero di versioning (firma Ed25519 + SHA-256).
+- **`/admin/segnalazioni`**: gestione segnalazioni con **pulsante di reload** e **note dello sviluppatore**.
+- **`/admin/docs-manager`**: gestione/anteprima documentazione (layout a blocchi) + **editor del profilo "Chi sono"**.
+- **`/admin/analytics`** (sperimentale): KPI download per mese (grafico a linee), totali e stato segnalazioni
+  (aperte / in lavorazione / chiuse).
+
+### `webplatform` — dashboard utente
+
+- **Changelog versioni** ad **altezza fissa con scroll** verticale.
+- **Verifica licenza** all'accesso: se attiva, il token viene nascosto e si mostra la **lista dei device collegati**.
+- **Card recensione**: l'utente inserisce versione, titolo e voto con **selettore a stelle (max 5)**.
+
+### `webplatform` — database (migration `0010`)
+
+- Tabella `author_profile` (singleton, contenuti `/chi-sono`), tabella `reviews` (voto 1..5 per versione),
+  RPC `downloads_per_month()` (KPI admin), bucket pubblico `assets` per la foto profilo. RLS coerenti con
+  `is_admin()` / `current_email()`.
+
+---
+
+## [4.3.3] — 2026-06-25
+
+Gestione Archivio e Compressione del LocalDrop. Da task ClickUp "Gestione Archivio e Compressione
+v4.3.3", scope `desktop` + `webapp`. Introdotto il modello **archivio reale `.lkszip`**: comprimere
+una cartella ora produce un singolo contenitore ZIP cifrato che sostituisce la cartella e il suo
+contenuto, sempre archiviato anche quando il risparmio è nullo.
+
+### `desktop` — backend archivio/compressione
+
+- **`POST /folders/{id}/compress` → archivio `.lkszip`**: `CompressionService.compressFolder` non
+  agisce più in-place. Ora ricomprime i file per tipo (il risultato più piccolo vince, altrimenti
+  bytes originali), li impacchetta in un unico ZIP che preserva i percorsi relativi, lo cifra e lo
+  registra come singolo `MediaEntity` `<nome>.lkszip` (flag `archivio=true`) sotto la cartella
+  genitore, quindi elimina la cartella originale e i relativi blob. L'archivio viene creato **anche
+  se la dimensione non diminuisce** (fix: cartelle di video/PDF già compressi non sparivano più nel
+  nulla).
+- **Flag `archivio`** aggiunto a `MediaEntity` e a `FileDto`: niente più euristica per estensione
+  lato frontend.
+- **`POST /folders/import`** (nuovo): estrazione server-side di uno ZIP caricato in una nuova
+  cartella + file, ricreando l'albero delle sottocartelle (cap a `MAX_DEPTH`, livelli più profondi
+  appiattiti).
+- **`POST /files/upload` — parametro `archivio`**: consente di caricare una cartella già compressa
+  "così com'è", impostando il flag e normalizzando il nome.
+- **Estensione archivio `.lks<ext>`**: l'upload "così com'è" preserva il formato originale
+  (`zip→lkszip`, `rar→lksrar`, `7z→lks7z`, …) invece di forzare sempre `.lkszip`.
+- **Download archivio "apribile"**: in download il prefisso `lks` viene rimosso dall'estensione
+  (`foto.lksrar` → `foto.rar`), così l'archivio torna apribile con gli strumenti standard.
+- **`POST /files/{id}/extract`** (nuovo): decomprime un archivio già presente ricreando cartella +
+  file e rimuovendo l'archivio. In-app solo payload ZIP (`.lkszip`); per rar/7z l'utente scarica ed
+  estrae manualmente.
+
+### `webapp` — LocalDrop
+
+- **Card "Archivio"** basata sul flag reale `archivio` con icona zip (`FolderArchive`, equivalente di
+  `mdi-folder-zip-outline`); gli archivi sono mostrati solo nella card dedicata, non duplicati nelle
+  liste cartelle/file.
+- **Upload cartella intera** (`webkitdirectory`) con ricostruzione dell'albero; **upload file**
+  diretto dall'header.
+- **Upload di un archivio**: dialog con scelta *decomprimi e mostra come cartella* (estrazione
+  backend, solo `.zip`) oppure *carica come archivio* (`.lks<ext>` che preserva il formato).
+- **Decomprimi dalla card archivio**: pulsante *Decomprimi* sugli archivi `.lkszip` per estrarli in
+  cartella; lo scarico riporta l'archivio al nome/estensione originale apribile.
+- **Selezione multipla** dei file con barra azioni per cambio cartella padre e/o categoria in blocco.
+- **Card della griglia (gr2) ad altezza fissa con scroll interno**: la pagina non cresce più
+  all'infinito.
+- **Mobile**: sotto i 640px i layout a griglia sono disattivati, l'archivio è consultabile solo come
+  lista.
+
+---
+
+## [4.3.2] — 2026-06-23
+
+Migliorie al Tool-CLI (uso autore). Da task ClickUp "Migliorie 4.3.2", scope `tool-cli`. La parte
+Supabase (raggruppamento `registrations`/`activations`) è **rimandata** su richiesta. Formati
+`LKS1.`/`ULK1.` e logica crittografica invariati.
+
+### `tool-cli` — UI grafica Swing + copia unlock sul Desktop + keygen — *artifact v2.3.0*
+
+- **Copia `unlock-<hwid>.lks` sul Desktop**: alla generazione, oltre a `output/unlock.lks`
+  (+ `.sha256`), il token viene copiato sul Desktop con nome `unlock-<hwid>.lks` (hwid sanitizzato),
+  così non va recuperato da `output/`. I due file canonici restano in `output/`.
+- **UI grafica Swing** (avvio predefinito), che replica il wireframe "console" (tema scuro, accenti
+  verdi, label monospace): dashboard con card `[01]–[06]` e viste di dettaglio con header
+  (← Dashboard + breadcrumb), card **Parametri** con pulsante azione e card **Output**. GUI e console
+  condividono **le stesse classi di logica** → azioni e output identici. La firma release adatta il
+  contenuto del wireframe alla logica reale (Ed25519 detached, non Authenticode/JKS).
+- **Genera chiavi `[06]`** (CLI `[6]` + GUI): crea una nuova coppia Ed25519 (unlock o release) con
+  **backup automatico** delle esistenti in `.bak-<timestamp>`; stampa la pubblica Base64 DER (+
+  `sign_key_id` per la release) e un **promemoria** di aggiornare `UnlockKeys`/`ReleaseKeys` nella
+  DesktopApp e ricompilare prima di firmare/pubblicare. Il caricamento chiavi all'avvio non è più
+  bloccante (si possono generare da zero).
+- **Chiavi per-versione** (`KeyLocator`): keygen accetta una **versione** e scrive in
+  `keys/<versione>/`; generazione e verifica unlock selezionano **automaticamente** la chiave dalla
+  `appVersion` del `lock.lks` (fallback a `keys/`). Così l'unlock è firmato con la chiave della
+  versione installata dall'utente e la verifica sull'app va a buon fine. (La firma release resta
+  soggetta alla catena di update: verifica con la pubblica embeddata nella versione già installata.)
+- Avvio: GUI di default; `--cli` (o ambiente headless) → menu testuale.
+- **Fix tipografia UI**: corretto il letter-spacing (TRACKING) delle label, che usciva esploso;
+  pulsante azione con triangolo "play" disegnato (il glifo ▶ non era reso da alcuni font).
+- **Build non verificata** in questa sessione (richiede JDK 21): eseguire
+  `cd Tool-CLI/lks-unlock-tool && mvn -q clean package` su JDK 21.
+
+**File** — Nuovi: `ui/Theme.java`, `ui/IconBox.java`, `ui/ToolWindow.java`, `ui/DashboardView.java`,
+`ui/OperationView.java`, `ui/GenerateView.java`, `ui/ValidateView.java`, `ui/ShowKeysView.java`,
+`ui/VerifyView.java`, `ui/SignReleaseView.java`, `ui/KeyGenView.java`, `ConsoleApp.java`,
+`KeyGenerator.java`. Modificati: `Main.java` (launcher GUI/`--cli`), `UnlockGenerator.java`
+(`writeDesktopCopy`), `pom.xml` (v2.3.0), `README.md`.
+
+> ⚠️ **Rotazione chiavi**: ruotare la chiave a ogni versione rompe la verifica sulle installazioni
+> già distribuite (che hanno la vecchia pubblica embeddata). Vedi nota operativa nel README.
 
 ---
 
 ## [4.3.1] — 2026-06-20
 
 Pannello admin e Dashboard rivisti, più il backend delle segnalazioni. Da task ClickUp "BugFix v4.3.1"
-(eseguito lo scope `webplatform`; gli interventi `webapp` e `desktop` sono nelle rispettive lavorazioni).
+(eseguiti gli scope `webplatform` e `webapp`; l'intervento `desktop` è nella rispettiva lavorazione).
 
 ### `webplatform` — Pannello admin, segnalazioni e Dashboard
 
@@ -40,6 +211,53 @@ Pannello admin e Dashboard rivisti, più il backend delle segnalazioni. Da task 
 `src/pages/Dashboard.tsx`, `src/types/database.types.ts`, `src/pages/Home.tsx`, `package.json`.
 
 **Verifica** — `tsc -b --force`: **OK**.
+
+### `webapp` — Local Drop a layout, fix e tipologie credenziali (scaffold)
+
+- **`/localdrop` — layout selezionabile**: nuovo switch **Lista / Griglia 2×1 / Griglia 2×2** (scelta
+  ricordata). In **2×2** quattro card: *Cartelle* (cartelle non-archivio coi loro file), *Archivio*
+  (cartelle contenenti archivi prodotti dal programma — euristica per estensione zip/rar/…; gli archivi
+  sciolti caricati dall'utente restano nella card *File*), *File categorizzati* (file in radice con
+  categoria), *File* (file in radice senza categoria/cartella). In **2×1** le card sono accorpate
+  (*Archivio* = Cartelle+Archivio, *File* = Categorizzati+File). In **Lista** il comportamento resta l'albero attuale.
+- **Filtro categorie + ricerca** nel Local Drop: chips per categoria-documento (stile credenziali) e
+  **ricerca testuale su nomi file e nomi cartelle**. Upload "aggiungi documenti" che inserisce
+  correttamente il file **dentro la cartella** scelta. Limite di upload portato a **10 GB** (client).
+- **`/localdrop/text` dual-mode**: switch **Testo rapido / Carica file**, con selettori di **categoria**
+  e **cartella** e condivisione immediata. Nessun vincolo tranne il file; se manca il nome si usa quello del file.
+- **Dashboard**: i filtri delle categorie mostrano **solo quelle di tipo `CREDENZIALE`**.
+- **`/password/new`**: la select categoria mostra **solo categorie `CREDENZIALE`** (rimosse le documentali).
+- **Fix avatar a registrazione**: il redirect post-registrazione passa da `register → dashboard` a
+  **`register → login`**, risolvendo alla radice il colore avatar errato al primo accesso.
+- Versione Web App a **4.3.1** (`package.json`, `Costant.VERSION`).
+
+**File** — Modificati: `src/pages/LocalDrop.tsx`,
+`src/pages/TextFile.tsx`, `src/pages/Dashboard.tsx`, `src/pages/PasswordForm.tsx`, `src/pages/Register.tsx`,
+`package.json`, `src/utils/Costant.ts`.
+
+**Verifica** — `tsc -b`: **OK**; `vite build`: **OK** (JS 317 kB).
+
+### `desktop` — Limite 10GB, logging, segnalazioni e tipologie password
+
+- **Limite upload 1GB → 10GB** (`FileService` + `application.properties` multipart).
+- **Logging riorganizzato** per categoria: `SYSTEM` (avvio/arresto/aggiornamenti), `ACCESSO` (login
+  desktop + auth API con HTTP code), `FILE` (azioni Local Drop), **`API`** (ex `SERVICE`, ogni
+  chiamata API — non nel dump) tramite un filtro dedicato, `INIT` (apertura pannello, decompressione
+  `frontend.zip`). `AppLogger` con i nuovi helper `file()/api()/init()`.
+- **Segnalazioni** (nuovo frame): elenco delle segnalazioni aperte da questo dispositivo con stato
+  di lavorazione + form per aprirne. Flusso su Supabase via `ReportService` (RPC `open_report` /
+  `list_my_reports`, già nella migrazione `0009_reports.sql`). Il dispositivo è identificato da un
+  **device-id locale** (UUID per-install in `environment.lks`, nessun legame hardware).
+- **Tipologie password** (config tipizzata + modello dinamico): `PasswordTypeRegistry` carica le 19
+  tipologie dal bundle `password-types.json` (`defaultFields`/`supportedFields`) ed espone
+  `GET /api/password-types`; logiche per campi obbligatori/opzionali e **validazione**. La
+  credenziale ha ora `tipologia` e `campi` dinamici (valori **cifrati** AES; tipi sensibili
+  `concealed`/`otp` nascosti in lista). Estendibile aggiornando solo il JSON.
+- Versione DesktopApp a **4.3.1** (`pom.xml`, `AppVersion.FALLBACK`).
+
+> Note: la compressione lossless del testo e la rimozione dell'hardware_id da Supabase restano
+> rinviate; la reveal per-campo dei valori dinamici sensibili è un follow-up (i valori sono già
+> memorizzati cifrati). Build non eseguita in sessione (no Maven/JDK 21): review statica completata.
 
 ## [4.3.0] — 2026-06-20
 

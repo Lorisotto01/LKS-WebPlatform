@@ -39,3 +39,53 @@ export async function ensureActivation(email: string, appVersion?: string): Prom
   if (error) return null;
   return data;
 }
+
+/** Tutte le attivazioni dell'utente (più recenti prima). */
+export async function listActivations(email: string): Promise<Activation[]> {
+  const { data } = await supabase
+    .from("activations")
+    .select("*")
+    .eq("email", email)
+    .order("created_at", { ascending: false });
+  return data ?? [];
+}
+
+export interface LicenseState {
+  /** True se almeno un'attivazione risulta 'active' (HWID legato). */
+  isActive: boolean;
+  /** Attivazione 'pending' più recente (token ancora da usare), se presente. */
+  pending: Activation | null;
+  /** Dispositivi collegati: attivazioni con HWID valorizzato. */
+  devices: Activation[];
+}
+
+/**
+ * Verifica lo stato della licenza su Supabase per l'utente.
+ * Se attiva, l'UI nasconde il token e mostra la lista dei device collegati.
+ */
+export async function getLicenseState(email: string): Promise<LicenseState> {
+  const acts = await listActivations(email);
+  const devices = acts.filter((a) => a.hwid);
+  const isActive = acts.some((a) => a.status === "active");
+  const pending = acts.find((a) => a.status === "pending" && !a.hwid) ?? null;
+  return { isActive, pending, devices };
+}
+
+/**
+ * Revoca la licenza di un'attivazione dell'utente: scollega il device
+ * (hwid → null, stato → pending) e RIGENERA il token (il vecchio non vale più).
+ */
+export async function revokeActivation(id: string): Promise<{ ok: boolean; error: string | null }> {
+  const { data, error } = await supabase.rpc("revoke_activation", { p_id: id });
+  if (error) return { ok: false, error: error.message };
+  const res = data as { ok?: boolean; error?: string } | null;
+  if (!res?.ok) return { ok: false, error: res?.error ?? "Revoca non riuscita." };
+  return { ok: true, error: null };
+}
+
+/** Tronca una stringa al centro: "abcdef…uvwxyz" (utile per HWID lunghi). */
+export function middleTruncate(value: string, head = 10, tail = 8): string {
+  if (!value) return value;
+  if (value.length <= head + tail + 1) return value;
+  return `${value.slice(0, head)}…${value.slice(-tail)}`;
+}

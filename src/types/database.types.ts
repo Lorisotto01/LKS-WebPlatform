@@ -3,6 +3,13 @@
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
+/** Voce di contatto della pagina /chi-sono (author_profile.contacts). */
+export interface AuthorContact {
+  label: string;
+  value: string;
+  href?: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -51,21 +58,37 @@ export interface Database {
       };
       reports: {
         // v4.3.1 (0009): segnalazioni aperte dalla DesktopApp, gestite dall'admin.
+        // v4.3.5 (0012): tipo 'idea' -> 'implementazione'.
         Row: {
           id: string; email: string | null; hwid: string | null;
-          tipo: "bug" | "idea" | "altro"; titolo: string; descrizione: string | null;
+          tipo: "bug" | "implementazione" | "altro"; titolo: string; descrizione: string | null;
           app_version: string | null; status: "aperta" | "in_lavorazione" | "chiusa";
           admin_note: string | null; created_at: string; updated_at: string;
         };
         Insert: {
           id?: string; email?: string | null; hwid?: string | null;
-          tipo?: "bug" | "idea" | "altro"; titolo: string; descrizione?: string | null;
+          tipo?: "bug" | "implementazione" | "altro"; titolo: string; descrizione?: string | null;
           app_version?: string | null; status?: "aperta" | "in_lavorazione" | "chiusa";
           admin_note?: string | null; created_at?: string; updated_at?: string;
         };
         Update: {
           status?: "aperta" | "in_lavorazione" | "chiusa"; admin_note?: string | null;
-          tipo?: "bug" | "idea" | "altro"; titolo?: string; descrizione?: string | null;
+          tipo?: "bug" | "implementazione" | "altro"; titolo?: string; descrizione?: string | null;
+        };
+        Relationships: [];
+      };
+      report_attachments: {
+        // v4.3.5 (0012): screenshot allegati alle segnalazioni (bucket 'report-attachments').
+        Row: {
+          id: string; report_id: string; path: string; filename: string | null;
+          content_type: string | null; size_bytes: number | null; created_at: string;
+        };
+        Insert: {
+          id?: string; report_id: string; path: string; filename?: string | null;
+          content_type?: string | null; size_bytes?: number | null; created_at?: string;
+        };
+        Update: {
+          filename?: string | null; content_type?: string | null; size_bytes?: number | null;
         };
         Relationships: [];
       };
@@ -83,6 +106,77 @@ export interface Database {
         Update: {
           hwid?: string | null; status?: "pending" | "active" | "suspended";
           app_version?: string | null; activated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      author_profile: {
+        // v4.3.4 (0010): contenuti della pagina /chi-sono, editabili dall'admin.
+        Row: {
+          id: number; display_name: string; headline: string | null; bio: string | null;
+          photo_url: string | null; email: string | null; location: string | null;
+          contacts: AuthorContact[]; updated_at: string;
+        };
+        Insert: {
+          id?: number; display_name?: string; headline?: string | null; bio?: string | null;
+          photo_url?: string | null; email?: string | null; location?: string | null;
+          contacts?: AuthorContact[]; updated_at?: string;
+        };
+        Update: {
+          display_name?: string; headline?: string | null; bio?: string | null;
+          photo_url?: string | null; email?: string | null; location?: string | null;
+          contacts?: AuthorContact[]; updated_at?: string;
+        };
+        Relationships: [];
+      };
+      reviews: {
+        // v4.3.4 (0010): recensioni per versione (rating 1..5).
+        Row: {
+          id: string; email: string | null; author_name: string | null;
+          version: string; titolo: string; rating: number; descrizione: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string; email?: string | null; author_name?: string | null;
+          version: string; titolo: string; rating: number; descrizione?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          titolo?: string; rating?: number; descrizione?: string | null;
+        };
+        Relationships: [];
+      };
+      doc_settings: {
+        // v4.3.4 (0011): impostazioni della pagina /docs.
+        Row: {
+          id: number; page_title: string; page_subtitle: string | null;
+          show_index: boolean; show_numbering: boolean; updated_at: string;
+        };
+        Insert: {
+          id?: number; page_title?: string; page_subtitle?: string | null;
+          show_index?: boolean; show_numbering?: boolean; updated_at?: string;
+        };
+        Update: {
+          page_title?: string; page_subtitle?: string | null;
+          show_index?: boolean; show_numbering?: boolean; updated_at?: string;
+        };
+        Relationships: [];
+      };
+      doc_blocks: {
+        // v4.3.4 (0011): blocchi ordinati e riordinabili della /docs.
+        Row: {
+          id: string; position: number;
+          type: "title" | "paragraph" | "image" | "note" | "warning" | "list" | "table" | "code" | "divider";
+          content: Json; visible: boolean; updated_at: string;
+        };
+        Insert: {
+          id?: string; position?: number;
+          type?: "title" | "paragraph" | "image" | "note" | "warning" | "list" | "table" | "code" | "divider";
+          content?: Json; visible?: boolean; updated_at?: string;
+        };
+        Update: {
+          position?: number;
+          type?: "title" | "paragraph" | "image" | "note" | "warning" | "list" | "table" | "code" | "divider";
+          content?: Json; visible?: boolean; updated_at?: string;
         };
         Relationships: [];
       };
@@ -112,6 +206,16 @@ export interface Database {
         Args: Record<PropertyKey, never>;
         Returns: { version: string; total: number; unique_users: number }[];
       };
+      // v4.3.4 (0010): download mensili per il KPI analytics (solo admin).
+      downloads_per_month: {
+        Args: Record<PropertyKey, never>;
+        Returns: { month: string; total: number; unique_users: number }[];
+      };
+      // v4.3.4 (0011): l'utente revoca la propria licenza e rigenera il token.
+      revoke_activation: {
+        Args: { p_id: string };
+        Returns: Json;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -123,3 +227,8 @@ export type Registration = Database["public"]["Tables"]["registrations"]["Row"];
 export type Download = Database["public"]["Tables"]["downloads"]["Row"];
 export type Activation = Database["public"]["Tables"]["activations"]["Row"];
 export type Report = Database["public"]["Tables"]["reports"]["Row"];
+export type ReportAttachment = Database["public"]["Tables"]["report_attachments"]["Row"];
+export type AuthorProfile = Database["public"]["Tables"]["author_profile"]["Row"];
+export type Review = Database["public"]["Tables"]["reviews"]["Row"];
+export type DocSettings = Database["public"]["Tables"]["doc_settings"]["Row"];
+export type DocBlockRow = Database["public"]["Tables"]["doc_blocks"]["Row"];

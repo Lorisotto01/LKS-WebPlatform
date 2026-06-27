@@ -6,7 +6,7 @@ import {
   KeyRound,
   WifiOff,
   Users,
-  Github,
+  Fingerprint,
   FolderSync,
   MonitorDown,
   Server,
@@ -37,7 +37,7 @@ const FEATURES = [
   { icon: KeyRound, title: "PBKDF2 · 310k iter.", text: "La master password è derivata con 310.000 iterazioni PBKDF2: forza bruta resa impraticabile." },
   { icon: WifiOff, title: "Offline-first", text: "Funziona senza Internet. Nessun server di terze parti vede le tue credenziali, mai." },
   { icon: Users, title: "Multi-utente LAN", text: "Più persone, più vault sullo stesso server di casa, ognuno isolato e protetto." },
-  { icon: Github, title: "Open source", text: "Codice ispezionabile da chiunque. La sicurezza non si fida delle promesse, si verifica." },
+  { icon: Fingerprint, title: "Licenza per dispositivo", text: "L'attivazione lega la licenza all'hardware del tuo PC: nessuna copia non autorizzata." },
   { icon: FolderSync, title: "LocalDrop file", text: "Condividi file tra i dispositivi della rete, cifrati end-to-end come le password." },
 ];
 
@@ -51,9 +51,10 @@ export function Home() {
     <div className="min-h-screen">
       <Navbar
         links={[
-          { label: "Funzionalità", href: "#funzionalita" },
-          { label: "Sicurezza", href: "#sicurezza" },
-          { label: "Download", href: "#download" },
+          { label: "Funzionalità", href: "/funzionalita" },
+          { label: "Sicurezza", href: "/sicurezza" },
+          { label: "Recensioni", href: "/recensioni" },
+          { label: "Chi sono", href: "/chi-sono" },
         ]}
       />
 
@@ -63,7 +64,7 @@ export function Home() {
         <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 lg:grid-cols-2 lg:py-28">
           <div className="animate-fade-up">
             <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground">
-              <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Open source - Offline-first - Zero cloud
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Privato - Offline-first - Zero cloud
             </span>
             <h1 className="mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
               Le tue password.
@@ -73,7 +74,7 @@ export function Home() {
               <span className="text-brand-gradient">Solo tue.</span>
             </h1>
             <p className="mt-6 max-w-md text-lg text-muted-foreground">
-              Un password manager open source che gira sulla{" "}
+              Un password manager privato che gira sulla{" "}
               <span className="text-foreground">tua rete locale</span>. Niente cloud, niente abbonamenti,
               niente che lasci casa tua.
             </p>
@@ -161,7 +162,7 @@ export function Home() {
           <div className="pointer-events-none absolute inset-0 bg-hero-glow opacity-70" />
           <div className="relative">
             <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground">
-              <Check className="h-3.5 w-3.5 text-primary" /> v1.0 - Disponibile ora
+              <Check className="h-3.5 w-3.5 text-primary" /> v4.3.4 - Disponibile ora
             </span>
             <h2 className="mt-6 text-3xl font-extrabold tracking-tight sm:text-4xl">
               Pronto a riprendere
@@ -175,7 +176,7 @@ export function Home() {
               <Download className="h-5 w-5" /> Scarica gratis
             </Button>
             <p className="mt-4 text-xs text-muted-foreground">
-              Windows 10/11 - Open source - Nessuna registrazione a pagamento
+              Windows 10/11 - Privato - Nessuna registrazione a pagamento
             </p>
           </div>
         </div>
@@ -232,7 +233,7 @@ function AppMockup() {
             <LogoMark className="h-5 w-5" />
             <div className="leading-tight">
               <div className="text-[11px] font-semibold">SecureLocalShare</div>
-              <div className="text-[9px] text-muted-foreground">v4.3.1 · LAN</div>
+              <div className="text-[9px] text-muted-foreground">v4.3.4 · LAN</div>
             </div>
           </div>
           <div className="h-px bg-border/60" />
@@ -350,23 +351,21 @@ function AppMockup() {
 }
 
 function SiteFooter() {
-  // ⚠️ Sostituisci con l'URL reale del tuo repository pubblico.
-  const GITHUB_URL = "https://github.com/Lorisotto01/LKS-WebPlatform";
   const cols = [
     {
       title: "Prodotto",
       links: [
-        { label: "Funzionalità", to: "#funzionalita", kind: "anchor" as const },
-        { label: "Sicurezza", to: "#sicurezza", kind: "anchor" as const },
-        { label: "Download", to: "#download", kind: "anchor" as const },
+        { label: "Funzionalità", to: "/funzionalita", kind: "route" as const },
+        { label: "Sicurezza", to: "/sicurezza", kind: "route" as const },
+        { label: "Recensioni", to: "/recensioni", kind: "route" as const },
         { label: "Changelog", to: "/changelog", kind: "route" as const },
       ],
     },
     {
       title: "Risorse",
       links: [
-        { label: "GitHub", to: GITHUB_URL, kind: "external" as const },
         { label: "Documentazione", to: "/docs", kind: "route" as const },
+        { label: "Chi sono", to: "/chi-sono", kind: "route" as const },
         { label: "Privacy", to: "/privacy", kind: "route" as const },
         { label: "Termini", to: "/terms", kind: "route" as const },
       ],
@@ -379,7 +378,7 @@ function SiteFooter() {
         <div>
           <Logo size="md" />
           <p className="mt-3 max-w-xs text-sm text-muted-foreground">
-            Password manager open source per la tua rete locale. Tu hai il controllo, sempre.
+            Password manager privato per la tua rete locale. Tu hai il controllo, sempre.
           </p>
         </div>
         {cols.map((c) => (
@@ -388,19 +387,9 @@ function SiteFooter() {
             <ul className="mt-3 space-y-2">
               {c.links.map((l) => (
                 <li key={l.label}>
-                  {l.kind === "route" ? (
-                    <Link to={l.to} className={cls}>
-                      {l.label}
-                    </Link>
-                  ) : l.kind === "external" ? (
-                    <a href={l.to} target="_blank" rel="noreferrer" className={cls}>
-                      {l.label}
-                    </a>
-                  ) : (
-                    <a href={l.to} className={cls}>
-                      {l.label}
-                    </a>
-                  )}
+                  <Link to={l.to} className={cls}>
+                    {l.label}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -409,7 +398,7 @@ function SiteFooter() {
       </div>
       <div className="border-t border-border/40">
         <p className="mx-auto max-w-6xl px-6 py-5 text-xs text-muted-foreground">
-          (c) {new Date().getFullYear()} SecureLocalShare - Lorenzo Sottocorno - v4.3.1
+          (c) {new Date().getFullYear()} SecureLocalShare - Lorenzo Sottocorno - v4.3.4
         </p>
       </div>
     </footer>

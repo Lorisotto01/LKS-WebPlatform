@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/toast";
 import { Navbar } from "@/components/Navbar";
 import { ActivationCard } from "@/components/ActivationCard";
+import { ReviewForm } from "@/components/ReviewForm";
 import { Button } from "@/components/ui/button";
 import { ensureActivation } from "@/lib/activations";
 import type { Release, Download as DownloadRow } from "@/types/database.types";
@@ -149,7 +150,8 @@ export function Dashboard() {
                       <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
                         Release notes
                       </p>
-                      <ul className="space-y-1.5 text-sm">
+                      {/* Altezza fissa + scroll verticale per le note di rilascio. */}
+                      <ul className="max-h-44 space-y-1.5 overflow-y-auto pr-2 text-sm">
                         {latest.notes.split("\n").filter(Boolean).map((line, i) => (
                           <li key={i} className="flex gap-2">
                             <span className="text-primary">&rsaquo;</span>
@@ -179,8 +181,13 @@ export function Dashboard() {
                 {/* Timeline versioni precedenti */}
                 {previous.length > 0 && (
                   <section>
-                    <h2 className="text-lg font-semibold">Versioni precedenti</h2>
-                    <ol className="relative mt-4 ml-2 space-y-4 border-l border-border/60 pl-6">
+                    <div className="flex items-baseline justify-between">
+                      <h2 className="text-lg font-semibold">Versioni precedenti</h2>
+                      <span className="text-xs text-muted-foreground">{previous.length} versioni · scorri</span>
+                    </div>
+                    {/* Altezza fissa + scroll verticale per i changelog delle versioni. */}
+                    <div className="mt-4 max-h-[26rem] overflow-y-auto pr-2">
+                    <ol className="relative ml-2 space-y-4 border-l border-border/60 pl-6">
                       {previous.map((r) => (
                         <li key={r.id} className="relative">
                           <span className="absolute -left-[1.94rem] top-4 h-3.5 w-3.5 rounded-full border-2 border-primary bg-background" />
@@ -209,6 +216,7 @@ export function Dashboard() {
                         </li>
                       ))}
                     </ol>
+                    </div>
                   </section>
                 )}
               </>
@@ -263,7 +271,10 @@ export function Dashboard() {
               )}
             </section>
 
-            {/* 4 — Elimina account */}
+            {/* 4 — Recensione versione */}
+            <ReviewForm versions={releases.map((r) => r.version)} defaultVersion={latest?.version} />
+
+            {/* 5 — Elimina account */}
             <section>
               <div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
