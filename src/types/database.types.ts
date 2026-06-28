@@ -95,16 +95,16 @@ export interface Database {
       activations: {
         Row: {
           id: string; email: string; activation_token: string; hwid: string | null;
-          status: "pending" | "active" | "suspended"; app_version: string | null;
+          status: "pending" | "active" | "revoked" | "suspended"; app_version: string | null;
           created_at: string; activated_at: string | null;
         };
         Insert: {
           id?: string; email: string; activation_token?: string; hwid?: string | null;
-          status?: "pending" | "active" | "suspended"; app_version?: string | null;
+          status?: "pending" | "active" | "revoked" | "suspended"; app_version?: string | null;
           created_at?: string; activated_at?: string | null;
         };
         Update: {
-          hwid?: string | null; status?: "pending" | "active" | "suspended";
+          hwid?: string | null; status?: "pending" | "active" | "revoked" | "suspended";
           app_version?: string | null; activated_at?: string | null;
         };
         Relationships: [];

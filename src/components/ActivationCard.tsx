@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { KeyRound, Copy, Check, CheckCircle2, AlertTriangle, MonitorSmartphone, Clock, ShieldOff } from "lucide-react";
+import { KeyRound, Copy, Check, CheckCircle2, AlertTriangle, MonitorSmartphone, Clock, ShieldOff, Trash2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import {
   ensureActivation, getLicenseState, revokeActivation, middleTruncate, type LicenseState,
@@ -10,6 +10,7 @@ import type { Activation } from "@/types/database.types";
 const STATUS = {
   pending: { label: "In attesa di attivazione", cls: "bg-warning/15 text-warning", icon: AlertTriangle },
   active: { label: "Licenza attiva", cls: "bg-success/15 text-success", icon: CheckCircle2 },
+  revoked: { label: "Licenza revocata", cls: "bg-destructive/15 text-destructive", icon: ShieldOff },
   suspended: { label: "Sospeso", cls: "bg-destructive/15 text-destructive", icon: AlertTriangle },
 } as const;
 
@@ -54,12 +55,12 @@ export function ActivationCard() {
 
   const revoke = async (device: Activation) => {
     if (!user?.email) return;
-    if (!confirm("Revocare la licenza di questo dispositivo? Verrà scollegato e il token di attivazione rigenerato: il vecchio non sarà più valido.")) return;
+    if (!confirm("Revocare la licenza di questo dispositivo? L'app verrà bloccata al prossimo avvio e non sarà più possibile accedervi. Per riutilizzarla dovrai riattivare il dispositivo con un nuovo codice.")) return;
     setRevokingId(device.id);
     const { ok, error } = await revokeActivation(device.id);
     setRevokingId(null);
     if (!ok) return toast.error(error ?? "Revoca non riuscita.");
-    toast.success("Licenza revocata. Token rigenerato.");
+    toast.success("Licenza revocata. Il dispositivo verrà bloccato.");
     await refresh(user.email);
   };
 
@@ -77,11 +78,12 @@ export function ActivationCard() {
         </span>
       </div>
 
-      {state.isActive ? (
+      {state.devices.length > 0 && (
         <>
           <p className="mt-3 text-sm text-muted-foreground">
-            La licenza è attiva. Per sicurezza il token non viene mostrato. Di seguito i dispositivi collegati: puoi
-            revocarne la licenza in qualsiasi momento.
+            {state.isActive
+              ? "La licenza è attiva. Per sicurezza il token non viene mostrato. Di seguito i dispositivi collegati: puoi revocarne la licenza in qualsiasi momento."
+              : "Dispositivi collegati a questo account. Una licenza revocata blocca l'app sul dispositivo: per riusarla, riattivalo con il codice qui sotto."}
           </p>
           <ul className="mt-4 space-y-2.5">
             {state.devices.map((d) => (
@@ -89,8 +91,10 @@ export function ActivationCard() {
             ))}
           </ul>
         </>
-      ) : (
-        <>
+      )}
+
+      {!state.isActive && (
+        <div className={state.devices.length > 0 ? "mt-6" : ""}>
           <p className="mt-3 text-sm text-muted-foreground">
             Al <span className="text-foreground">primo avvio</span> della DesktopApp, incolla questo token di
             attivazione per collegare il dispositivo al tuo account.
@@ -108,7 +112,7 @@ export function ActivationCard() {
               Token non disponibile. Scarica una versione dalla card a sinistra per generarne uno.
             </p>
           )}
-        </>
+        </div>
       )}
     </section>
   );
@@ -122,7 +126,10 @@ function DeviceRow({ device, onRevoke, revoking }: { device: Activation; onRevok
         <MonitorSmartphone className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-mono text-sm" title={device.hwid ?? ""}>{middleTruncate(device.hwid ?? "")}</p>
+        <p className="truncate text-sm font-medium">Dispositivo</p>
+        <p className="truncate font-mono text-xs text-muted-foreground" title={device.hwid ?? ""}>
+          {middleTruncate(device.hwid ?? "")}
+        </p>
         <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
           {device.activated_at && (
             <><Clock className="h-3 w-3" />Attivato il {new Date(device.activated_at).toLocaleDateString("it-IT")}</>
@@ -133,14 +140,19 @@ function DeviceRow({ device, onRevoke, revoking }: { device: Activation; onRevok
       <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${s.cls}`}>
         <s.icon className="h-3 w-3" /> {device.status === "active" ? "Collegato" : s.label}
       </span>
-      <button
-        type="button"
-        onClick={onRevoke}
-        disabled={revoking}
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-destructive/40 px-2.5 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60"
-      >
-        <ShieldOff className="h-3.5 w-3.5" /> {revoking ? "Revoca…" : "Revoca licenza"}
-      </button>
+      {device.status === "active" ? (
+        <button
+          type="button"
+          onClick={onRevoke}
+          disabled={revoking}
+          title="Revoca la licenza da questo dispositivo"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-destructive/40 px-2.5 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60"
+        >
+          <Trash2 className="h-3.5 w-3.5" /> {revoking ? "Revoca…" : "Revoca licenza"}
+        </button>
+      ) : (
+        <span className="shrink-0 text-xs text-muted-foreground">—</span>
+      )}
     </li>
   );
 }

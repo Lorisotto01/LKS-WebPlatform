@@ -13,7 +13,6 @@ create table if not exists public.registrations (
     id               uuid primary key default gen_random_uuid(),
     email            text not null unique,
     name             text not null,
-    hardware_id      text,                              -- set by the CLI tool (Fase 6)
     plan             text not null default 'free',
     registered_at    timestamptz not null default now(),
     last_download_at timestamptz,

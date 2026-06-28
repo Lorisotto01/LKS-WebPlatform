@@ -55,9 +55,12 @@ create policy report_attachments_admin_all on public.report_attachments
 -- ----------------------------------------------------------------------------
 -- 3) Bucket storage 'report-attachments' (privato)
 -- ----------------------------------------------------------------------------
-insert into storage.buckets (id, name, public)
-values ('report-attachments', 'report-attachments', false)
-on conflict (id) do nothing;
+-- Bucket privato, limitato a immagini PNG/JPEG fino a 5 MB (coerente con la validazione lato DesktopApp).
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('report-attachments', 'report-attachments', false, 5242880, array['image/png', 'image/jpeg'])
+on conflict (id) do update
+    set file_size_limit   = excluded.file_size_limit,
+        allowed_mime_types = excluded.allowed_mime_types;
 
 -- L'app (anon) puo solo INSERIRE oggetti nel bucket: non puo elencare ne leggere.
 drop policy if exists report_attach_anon_insert on storage.objects;

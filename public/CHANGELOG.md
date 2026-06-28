@@ -13,7 +13,69 @@ Storico delle modifiche rilevanti del progetto, raggruppate per modulo:
 | **PATCH** | bugfix, allineamenti, rifiniture |
 
 Più interventi nella stessa sessione condividono la stessa versione, distinti per scope.
-Versione corrente: **4.3.5**.
+Versione corrente: **4.3.6**.
+
+---
+
+## [4.3.6] — 2026-06-28
+
+Gestione Licenze & Security: messo a punto il flusso di una chiave di licenza tra WebPlatform e DesktopApp.
+Da task ClickUp "Gestione Licenze & Security v4.3.6", scope `desktop` + `webplatform` + `api` (Supabase).
+Introdotto lo stato **`revoked`** bloccante, lo scaffolding del piano in `environment.lks`, il binding
+dell'`hardware_id` lato registrazione e la correzione del banner d'errore in fase di creazione master password.
+
+### `api` (Supabase) — migration `0013`
+
+- **Nuovo stato `revoked`** nel CHECK di `activations.status` (`pending | active | revoked | suspended`).
+- `revoke_activation(p_id)` ora porta lo stato a **`revoked`** (revoca *bloccante*) mantenendo `hwid`/token,
+  così la DesktopApp che fa il controllo pre-login rileva la revoca e si blocca. (Prima riportava a `pending`
+  rigenerando il token.) La riattivazione avviene generando una nuova attivazione (nuovo token).
+- `bind_activation(...)` lega l'HWID **solo in `activations.hwid`** (la colonna `registrations.hardware_id` è
+  stata rimossa dallo schema) e restituisce il **piano** (`plan`, scaffolding `free`; `billingCycle`/`renewalEstimate`
+  null finché non esiste un modello di abbonamento). Una licenza `revoked` non è ri-bindabile.
+- `validate_license(...)` accetta `p_app_version` (sync della versione attiva dopo un aggiornamento) e
+  restituisce `status` (incl. `revoked`) e `plan`.
+
+### `desktop` — gate licenza & stato revoked
+
+- **Controllo licenza pre-login**: in `Main` il gate Supabase gira prima di qualsiasi UI di accesso. Se la
+  licenza è `revoked` l'app apre la nuova **`RevokedLicenseFrame`** (blocco totale) *prima* del login; offline o
+  Supabase non configurato → tollerato (l'app prosegue col piano locale in `environment.lks`).
+- **`RevokedLicenseFrame`**: spiega la revoca e offre la **disinstallazione con wipe irreversibile** di tutti i
+  dati locali (vault, utenti, password, storage, configurazione), avvisando che non sono recuperabili.
+- **Riattivazione dalla schermata di revoca**: nuovo pulsante "Riattiva licenza" che apre l'`ActivationDialog`;
+  con un **nuovo codice** valido il device viene ribindato (`bind_activation`) e l'app si riavvia. Il token
+  revocato e quelli legati ad altre macchine vengono rifiutati lato server, quindi senza una licenza nuova e
+  valida non è possibile riattivare. Aggiunto il caso `REVOKED` ai messaggi dell'`ActivationDialog`.
+- Rifinitura testi della schermata di revoca: a capo espliciti per evitare il troncamento delle parole.
+- **Diagnostica attivazione/licenza (logging pre-login)**: `ActivationService` ora logga la causa precisa
+  di ogni fallimento — su risposta non-2xx registra **status HTTP + corpo** della risposta Supabase (dove sta
+  il messaggio SQL/RLS), mentre su errore di trasporto registra il **tipo di eccezione** (timeout/DNS/connessione).
+  Nuovo outcome **`SERVER_ERROR`** (server raggiunto ma risposta d'errore) distinto da `NETWORK_ERROR`
+  (irraggiungibile), così il messaggio mostrato non è più il fuorviante "Impossibile contattare il server".
+  Il **gate licenza pre-login** (`Main`) e la **riattivazione** (`RevokedLicenseFrame`) tracciano sempre l'esito
+  nel log (`/log/app_<data>.log`), anche prima del login. `ManagerFrame` tollera `SERVER_ERROR` senza forzare la
+  riattivazione per un problema transitorio.
+- `ActivationService`: nuovo outcome **`REVOKED`**, parsing del piano (`Plan`), `applyPlan(...)` per
+  rispecchiare il piano in `environment.lks`, e `validate(...)` con sync della versione.
+- `EnvironmentData`: nuovi campi non-security `planType` (default `free`), `billingCycle`, `renewalEstimate`
+  (scaffolding; non coperti dall'HMAC di lock, quindi liberamente aggiornabili).
+- `ManagerFrame`/`WizardFrame`/`ActivationDialog`: il piano viene persistito all'attivazione e al refresh;
+  `ManagerFrame` gestisce anche l'outcome `REVOKED` (difesa in profondità).
+
+### `desktop` — fix layout (creazione master password)
+
+- Corretto il **banner d'errore** che rompeva il layout quando si inseriscono due master password non
+  coincidenti: la colonna dei contenuti ha ora larghezza fissa (`CONTENT_W`) e il `wrapWidth` del banner rientra
+  in tale larghezza, così la comparsa del banner non ridimensiona più la schermata.
+
+### `webplatform` — card attivazione
+
+- Stato **`revoked`** gestito nella `ActivationCard` (label + colore destructive) e nei tipi `database.types`.
+- Riga dispositivo: **nome dispositivo** ("Dispositivo") con HWID come sottotitolo, icona **cestino** (`Trash2`)
+  per la revoca mostrata solo sui dispositivi attivi; i dispositivi collegati restano visibili anche quando la
+  licenza non è attiva (per la riattivazione con nuovo codice).
+- Testi di revoca aggiornati alla nuova semantica *bloccante*.
 
 ---
 
@@ -34,6 +96,12 @@ aggiunti gli allegati (screenshot) end-to-end e corretto un bug di fuso orario.
 - **Dialog di dettaglio**: doppio click su una riga apre un riepilogo della segnalazione (titolo, tipologia,
   stato, aperto il, documenti allegati, descrizione, note di lavorazione dell'autore).
 - **Fix fuso orario**: l'orario di creazione viene convertito da UTC al fuso locale (risolve lo scarto di -2h).
+- **Validazione allegato**: accettati solo **PNG/JPG/JPEG** fino a **5 MB**, con filtro nel selettore file, controllo su
+  drag&drop e messaggio d'errore in caso di formato/dimensione non validi; `Content-Type` derivato dall'estensione.
+- **Rifiniture grafiche**: rimossa l'icona del lucchetto dal campo *Titolo* (con padding interno leggermente
+  aumentato, via `RoundField.withoutLeadingIcon()`); la select delle tipologie mostra ora le **stesse icone della
+  WebPlatform** (Bug / Wrench / MessageSquare) con i relativi colori — aggiunte le icone vettoriali `BUG`, `WRENCH`,
+  `MESSAGE` a `Icons`.
 
 ### `desktop` — `ReportService`
 
@@ -41,6 +109,9 @@ aggiunti gli allegati (screenshot) end-to-end e corretto un bug di fuso orario.
   screenshot nel bucket `report-attachments` e lo registra via RPC `attach_report_file`.
 - `listMine(...)` legge anche gli allegati (la RPC `list_my_reports` ora restituisce gli allegati per ogni
   segnalazione).
+- **Fix upload allegato (HTTP 400 RLS)**: rimosso l'header `x-upsert` dall'upload su storage. Con l'upsert
+  l'INSERT diventava `ON CONFLICT DO UPDATE`, che richiede anche una policy di UPDATE per il ruolo `anon`
+  (assente) → RLS negava la scrittura. Il path contiene già un UUID univoco, quindi l'upsert era superfluo.
 
 ### `webplatform` — backend (migration `0012`)
 
@@ -48,6 +119,8 @@ aggiunti gli allegati (screenshot) end-to-end e corretto un bug di fuso orario.
 - Nuova tabella `report_attachments` + bucket storage privato `report-attachments` (insert anonimo, lettura
   solo admin) e RPC `attach_report_file`.
 - `open_report` accetta `implementazione`; `list_my_reports` include gli allegati.
+- Bucket `report-attachments` vincolato lato server a **`image/png`, `image/jpeg`** e **5 MB** (`file_size_limit` +
+  `allowed_mime_types`), coerente con la validazione del client.
 
 ### `webplatform` — pannello admin
 

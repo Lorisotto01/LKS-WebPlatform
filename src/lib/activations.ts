@@ -72,8 +72,9 @@ export async function getLicenseState(email: string): Promise<LicenseState> {
 }
 
 /**
- * Revoca la licenza di un'attivazione dell'utente: scollega il device
- * (hwid → null, stato → pending) e RIGENERA il token (il vecchio non vale più).
+ * Revoca (bloccante) la licenza di un dispositivo: lo stato passa a 'revoked'.
+ * La DesktopApp, al controllo pre-login, rileva lo stato e si blocca. Per riusare
+ * il dispositivo l'utente genera una nuova attivazione (nuovo token) dalla card.
  */
 export async function revokeActivation(id: string): Promise<{ ok: boolean; error: string | null }> {
   const { data, error } = await supabase.rpc("revoke_activation", { p_id: id });

@@ -4,7 +4,7 @@ import { MessageSquareQuote, Tag, ArrowRight } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { StarRating } from "@/components/StarRating";
 import { useAuth } from "@/context/AuthContext";
-import { listReviews, groupByVersion } from "@/lib/reviews";
+import { listReviews } from "@/lib/reviews";
 import type { Review } from "@/types/database.types";
 
 export function Recensioni() {
@@ -19,7 +19,10 @@ export function Recensioni() {
     });
   }, []);
 
-  const groups = groupByVersion(reviews);
+  // Ordinate dalla migliore alla peggiore (a parità di voto, le più recenti prima).
+  const sorted = [...reviews].sort(
+    (a, b) => b.rating - a.rating || new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
   const overallAvg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
 
   return (
@@ -70,36 +73,22 @@ export function Recensioni() {
         </div>
       </section>
 
-      <main className="mx-auto max-w-4xl px-6 py-14">
+      <main className="mx-auto max-w-6xl px-6 py-14">
         {loading ? (
-          <div className="space-y-4">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-28 animate-pulse rounded-xl border bg-card/40" />
+          <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-40 animate-pulse rounded-xl border bg-card/40" />
             ))}
           </div>
-        ) : groups.length === 0 ? (
+        ) : sorted.length === 0 ? (
           <p className="rounded-xl border bg-card/40 p-10 text-center text-muted-foreground">
             Ancora nessuna recensione. Sii il primo a lasciarne una dalla tua dashboard.
           </p>
         ) : (
-          <div className="space-y-12">
-            {groups.map((g) => (
-              <section key={g.version}>
-                <div className="mb-4 flex flex-wrap items-center gap-3">
-                  <h2 className="inline-flex items-center gap-2 font-mono text-xl font-bold">
-                    <Tag className="h-5 w-5 text-primary" /> {g.version}
-                  </h2>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-card/60 px-3 py-1 text-xs text-muted-foreground">
-                    <StarRating value={Math.round(g.avg)} size={14} /> {g.avg.toFixed(1)} · {g.items.length}{" "}
-                    {g.items.length === 1 ? "recensione" : "recensioni"}
-                  </span>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {g.items.map((r) => (
-                    <ReviewCard key={r.id} review={r} />
-                  ))}
-                </div>
-              </section>
+          // Griglia responsive: il numero di colonne si adatta alla larghezza dello schermo.
+          <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+            {sorted.map((r) => (
+              <ReviewCard key={r.id} review={r} />
             ))}
           </div>
         )}
@@ -111,16 +100,18 @@ export function Recensioni() {
 function ReviewCard({ review }: { review: Review }) {
   const author = review.author_name || maskEmail(review.email) || "Utente";
   return (
-    <article className="rounded-xl border bg-card/50 p-5 shadow-card transition-colors hover:border-primary/40">
+    <article className="flex h-full flex-col rounded-xl border bg-card/50 p-5 shadow-card transition-colors hover:border-primary/40">
       <div className="flex items-center justify-between gap-2">
         <StarRating value={review.rating} size={16} />
-        <span className="text-xs text-muted-foreground">
-          {new Date(review.created_at).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}
+        <span className="inline-flex items-center gap-1 rounded-full bg-card/60 px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+          <Tag className="h-3 w-3 text-primary" /> {review.version}
         </span>
       </div>
       <h3 className="mt-3 font-semibold">{review.titolo}</h3>
-      {review.descrizione && <p className="mt-1.5 text-sm text-muted-foreground">{review.descrizione}</p>}
-      <p className="mt-3 text-xs text-muted-foreground">— {author}</p>
+      {review.descrizione && <p className="mt-1.5 break-words text-sm text-muted-foreground">{review.descrizione}</p>}
+      <p className="mt-auto pt-3 text-xs text-muted-foreground">
+        — {author} · {new Date(review.created_at).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}
+      </p>
     </article>
   );
 }
