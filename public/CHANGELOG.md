@@ -13,7 +13,54 @@ Storico delle modifiche rilevanti del progetto, raggruppate per modulo:
 | **PATCH** | bugfix, allineamenti, rifiniture |
 
 Più interventi nella stessa sessione condividono la stessa versione, distinti per scope.
-Versione corrente: **4.3.6**.
+Versione corrente: **4.3.7**.
+
+---
+
+## [4.3.7] — 2026-06-28
+
+Campi personalizzati per le categorie di tipo Credenziali. Da task ClickUp "Campi personalizzati per
+Categoria Credenziali v4.3.7", scope `desktop` + `api` + `webapp` + `webplatform`. Ogni categoria
+credenziali può ora definire fino a **4 campi personalizzati** (anche dello stesso tipo) che le sue
+credenziali ereditano. Il precedente meccanismo a "tipologia password" (`password-types.json` /
+`PasswordTypeRegistry`) è stato **rimosso** e sostituito da questo modello.
+
+### `desktop` — modello, validazione e notifiche
+
+- Nuova entità `CustomFieldEntity` sulle categorie (`TESTUALE`, `NUMERICO`, `SCADENZA`, `SECRET`;
+  `maxLunghezza` per il testo, default 30; `condivisibile` per i secret). Massimo 4 per categoria,
+  validati lato `CategoryService`.
+- `CredentialEntity`: rimosso `tipologia`; i `campi` ora contengono i **valori** dei campi della
+  categoria (snapshot di nome/tipo). I valori `SECRET` sono cifrati AES-256-GCM come la password e
+  nascosti nelle liste; gli altri sono in chiaro nel file (già cifrato) e validati per tipo.
+- Reveal arricchito: oltre alla password restituisce i campi `SECRET` visibili al richiedente
+  (il proprietario li vede tutti; un destinatario di condivisione solo quelli `condivisibile`).
+- **Notifiche di scadenza** via SSE: nuovo `NotificationType.PASSWORD_EXPIRING` e
+  `ExpiryNotificationService`, che alla connessione dello stream notifica le credenziali con un campo
+  `SCADENZA` entro 10 giorni (throttling in RAM per evitare duplicati alle riconnessioni).
+- Rimossi `PasswordTypeRegistry`, `PasswordTypeController`, `password-types.json` e `PasswordTypeDto`.
+- `DataStore`: deserializzazione tollerante ai campi sconosciuti (`FAIL_ON_UNKNOWN_PROPERTIES=false`),
+  così i vault esistenti con il vecchio `tipologia` continuano a caricarsi.
+
+### `webapp` — definizione, compilazione e scadenze
+
+- Editor categorie (`Categories.tsx`): aggiunta/rimozione di max 4 campi con configurazione per tipo
+  (max caratteri per il testo, flag *condivisibile* per i secret).
+- Form credenziale (`PasswordForm.tsx`): rende dinamicamente i campi della categoria selezionata
+  (testo con `maxLength`, numero, data, secret oscurato) e li invia al salvataggio.
+- Dashboard: banner di scadenza in alto a destra nella card con icona di allerta — **rosso 0–10 gg,
+  giallo 11–30 gg** — filtro **In scadenza** (0–30 gg) e, per le credenziali scadute, **mini-scheda
+  rossa «Credenziale scaduta»**.
+- Scheda di dettaglio (`CredentialViewModal`): mostra i campi personalizzati; i secret non
+  condivisibili restano oscurati per i destinatari.
+- Notifiche: gestito il tipo `PASSWORD_EXPIRING` (copy, icona, pannello).
+
+### `webplatform` — documentazione
+
+- Migration `0014_v437_docs_custom_fields.sql`: nuova sezione della pagina /docs (CMS) sui campi
+  personalizzati delle categorie e sul comportamento delle scadenze (inserimento idempotente).
+- Pagina Funzionalità aggiornata: il blocco "Password manager completo" cita i campi personalizzati
+  e gli avvisi di scadenza.
 
 ---
 

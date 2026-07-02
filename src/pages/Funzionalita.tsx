@@ -38,8 +38,8 @@ const FEATURES: FeatureDef[] = [
     icon: KeyRound,
     badge: "DesktopApp · WebApp",
     title: "Password manager completo",
-    body: "Salva le credenziali organizzate in categorie, copiale al volo, mostrale o nascondile, modificale ed eliminale. Tutto sincronizzato tra i dispositivi della tua rete, sempre cifrato.",
-    points: ["Categorie e ricerca rapida", "Copia / mostra-nascondi / modifica", "Condivisione cifrata tra utenti"],
+    body: "Salva le credenziali organizzate in categorie, copiale al volo, mostrale o nascondile, modificale ed eliminale. Ogni categoria può avere fino a 4 campi personalizzati (testo, numero, data di scadenza o secret), con avvisi e banner per le password in scadenza. Tutto sincronizzato tra i dispositivi della tua rete, sempre cifrato.",
+    points: ["Categorie con campi personalizzati", "Avvisi e filtro per le scadenze", "Condivisione cifrata tra utenti"],
     mock: "password",
   },
   {
