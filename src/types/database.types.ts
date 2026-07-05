@@ -13,6 +13,54 @@ export interface AuthorContact {
 export interface Database {
   public: {
     Tables: {
+      discounts: {
+        Row: {
+          id: string; code: string | null; label: string; percent: number;
+          applies_to: string; plan_code: string | null;
+          starts_at: string; ends_at: string; is_active: boolean; created_at: string;
+        };
+        Insert: {
+          id?: string; code?: string | null; label: string; percent: number;
+          applies_to?: string; plan_code?: string | null;
+          starts_at?: string; ends_at: string; is_active?: boolean; created_at?: string;
+        };
+        Update: {
+          code?: string | null; label?: string; percent?: number;
+          applies_to?: string; plan_code?: string | null;
+          starts_at?: string; ends_at?: string; is_active?: boolean;
+        };
+        Relationships: [];
+      };
+      orders: {
+        Row: {
+          id: string; email: string; kind: string; plan_code: string | null;
+          billing_cycle: string | null; lock_type: string | null;
+          base_cents: number; discount_id: string | null; amount_cents: number;
+          currency: string; provider: string; provider_ref: string | null;
+          status: string; created_at: string; paid_at: string | null;
+        };
+        Insert: {
+          id?: string; email: string; kind: string; plan_code?: string | null;
+          billing_cycle?: string | null; lock_type?: string | null;
+          base_cents: number; discount_id?: string | null; amount_cents: number;
+          currency?: string; provider: string; provider_ref?: string | null;
+          status?: string; created_at?: string; paid_at?: string | null;
+        };
+        Update: { status?: string; provider_ref?: string | null; paid_at?: string | null };
+        Relationships: [];
+      };
+      subscriptions: {
+        Row: {
+          email: string; plan_code: string; billing_cycle: string; status: string;
+          provider: string | null; current_period_end: string | null; updated_at: string;
+        };
+        Insert: {
+          email: string; plan_code: string; billing_cycle: string; status?: string;
+          provider?: string | null; current_period_end?: string | null; updated_at?: string;
+        };
+        Update: { plan_code?: string; billing_cycle?: string; status?: string; current_period_end?: string | null };
+        Relationships: [];
+      };
       registrations: {
         // GDPR (C2 / 0007): colonna `name` rimossa — il nome resta in auth user_metadata.
         Row: {
@@ -214,6 +262,26 @@ export interface Database {
       // v4.3.4 (0011): l'utente revoca la propria licenza e rigenera il token.
       revoke_activation: {
         Args: { p_id: string };
+        Returns: Json;
+      };
+      // v4.4.0 (0015): catalogo piani + feature (pubblico).
+      get_plans_catalog: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+      // v4.4.0 (0015): conteggi utenti per piano (solo admin) — card Contabilità.
+      admin_plan_accounting: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+      // v4.4.0 (0016): sconti a tempo attivi (pubblico).
+      get_active_discounts: {
+        Args: Record<PropertyKey, never>;
+        Returns: Database["public"]["Tables"]["discounts"]["Row"][];
+      };
+      // v4.4.0 (0016): totali ordini pagati (solo admin).
+      admin_orders_summary: {
+        Args: Record<PropertyKey, never>;
         Returns: Json;
       };
     };

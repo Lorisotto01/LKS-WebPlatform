@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Download, Sparkles, Clock, RefreshCw, Mail, User, MonitorDown, Trash2 } from "lucide-react";
+import { Download, Sparkles, Clock, RefreshCw, Mail, User, MonitorDown, Trash2, Crown, ArrowUpRight } from "lucide-react";
 import { supabase, RELEASES_BUCKET, SIGNED_URL_TTL_SECONDS } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/toast";
@@ -10,6 +10,7 @@ import { ReviewForm } from "@/components/ReviewForm";
 import { Button } from "@/components/ui/button";
 import { ensureActivation } from "@/lib/activations";
 import type { Release, Download as DownloadRow } from "@/types/database.types";
+import { getPlan, fmtEuro, type PlanCode } from "@/lib/plans";
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
@@ -21,16 +22,22 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [plan, setPlan] = useState<PlanCode>("free");
 
   const load = async () => {
     setLoading(true);
-    const [rel, dl] = await Promise.all([
+    const [rel, dl, reg] = await Promise.all([
       supabase.from("releases").select("*").eq("is_active", true).order("release_date", { ascending: false }),
       supabase.from("downloads").select("*").order("downloaded_at", { ascending: false }).limit(10),
+      user?.email
+        ? supabase.from("registrations").select("plan").eq("email", user.email).maybeSingle()
+        : Promise.resolve({ data: null, error: null } as { data: { plan: string } | null; error: null }),
     ]);
     if (rel.error) toast.error("Caricamento release non riuscito.");
     setReleases(rel.data ?? []);
     setHistory(dl.data ?? []);
+    const pc = (reg.data?.plan ?? "free").toLowerCase();
+    setPlan((["free", "essential", "pro"].includes(pc) ? pc : "free") as PlanCode);
     // GDPR (C2): il nome viene letto solo da user_metadata (niente più query a registrations.name).
     setName(
       (user?.user_metadata?.name as string | undefined) ??
@@ -225,6 +232,9 @@ export function Dashboard() {
 
           {/* ============ DX — Dati account ============ */}
           <div className="order-2 space-y-6 lg:order-2">
+            {/* 0 — Piano attuale */}
+            <PlanStatusCard plan={plan} onUpgrade={() => navigate("/pricing")} />
+
             {/* 1 — Email e nome */}
             <section>
               <h2 className="text-lg font-semibold">Dati account</h2>
@@ -299,6 +309,54 @@ export function Dashboard() {
         </div>
       </main>
     </div>
+  );
+}
+
+function PlanStatusCard({ plan, onUpgrade }: { plan: PlanCode; onUpgrade: () => void }) {
+  const p = getPlan(plan);
+  const isFree = plan === "free";
+  const tone = plan === "pro" ? "#A78BFA" : plan === "essential" ? "#F59E0B" : "#8A94A6";
+  return (
+    <section>
+      <h2 className="text-lg font-semibold">Il tuo piano</h2>
+      <div className="mt-4 overflow-hidden rounded-xl border bg-card/60 p-5 shadow-card">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-lg" style={{ background: `${tone}1F`, color: tone }}>
+              <Crown className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-sm text-muted-foreground">Piano attivo</p>
+              <p className="text-lg font-bold tracking-tight" style={{ color: tone }}>{p.name}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="font-mono text-sm">
+              {isFree ? "Gratis" : `${fmtEuro(p.priceMonth)}/mese · ${fmtEuro(p.priceYear)}/anno`}
+            </p>
+          </div>
+        </div>
+
+        <ul className="mt-4 grid gap-1.5 text-sm text-muted-foreground sm:grid-cols-2">
+          {p.highlights.slice(0, 4).map((h) => (
+            <li key={h} className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+              <span>{h}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-5 flex items-center gap-3">
+          <button
+            onClick={onUpgrade}
+            className="inline-flex items-center gap-2 rounded-lg bg-brand-gradient px-4 py-2 text-sm font-medium text-white shadow-glow transition-opacity hover:opacity-90"
+          >
+            {isFree ? <><Sparkles className="h-4 w-4" /> Fai l'upgrade</> : <><ArrowUpRight className="h-4 w-4" /> Cambia piano</>}
+          </button>
+          {isFree && <span className="text-xs text-muted-foreground">Sblocca più spazio, utenti e funzionalità.</span>}
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -53,6 +53,7 @@ export function Home() {
         links={[
           { label: "Funzionalità", href: "/funzionalita" },
           { label: "Sicurezza", href: "/sicurezza" },
+          { label: "Prezzi", href: "/pricing" },
           { label: "Recensioni", href: "/recensioni" },
           { label: "Chi sono", href: "/chi-sono" },
         ]}
@@ -357,6 +358,7 @@ function SiteFooter() {
       links: [
         { label: "Funzionalità", to: "/funzionalita", kind: "route" as const },
         { label: "Sicurezza", to: "/sicurezza", kind: "route" as const },
+        { label: "Prezzi", to: "/pricing", kind: "route" as const },
         { label: "Recensioni", to: "/recensioni", kind: "route" as const },
         { label: "Changelog", to: "/changelog", kind: "route" as const },
       ],

@@ -31,6 +31,7 @@ export function Recensioni() {
         links={[
           { label: "Funzionalità", href: "/funzionalita" },
           { label: "Sicurezza", href: "/sicurezza" },
+          { label: "Prezzi", href: "/pricing" },
           { label: "Recensioni", href: "/recensioni" },
           { label: "Chi sono", href: "/chi-sono" },
         ]}

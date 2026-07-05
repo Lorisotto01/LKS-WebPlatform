@@ -13,7 +13,259 @@ Storico delle modifiche rilevanti del progetto, raggruppate per modulo:
 | **PATCH** | bugfix, allineamenti, rifiniture |
 
 Più interventi nella stessa sessione condividono la stessa versione, distinti per scope.
-Versione corrente: **4.3.7**.
+Versione corrente: **4.5.0**.
+
+---
+
+## [4.5.0] — 2026-07-05
+
+### `desktop` / `webapp` — decompressione in-app di archivi RAR e 7z
+
+- **DesktopApp**: la decompressione in-app (`FileService.extractArchive`, endpoint
+  `POST /api/files/{id}/extract`) ora supporta anche i payload **RAR** (`.lksrar`) e **7z**
+  (`.lks7z`), oltre allo ZIP già esistente. Prima gli archivi non-ZIP venivano rifiutati con
+  `ARCHIVE_FORMAT` e andavano scaricati ed estratti manualmente.
+- **Nuova classe `ArchiveExtractors`**: isola le librerie di estrazione dietro un
+  `EntryConsumer` condiviso, così la ricostruzione dell'albero cartelle in
+  `FileService.importArchive` resta identica per tutti i formati. ZIP via JDK, **RAR via
+  [junrar](https://github.com/junrar/junrar)**, **7z via
+  [7-Zip-JBinding](https://sevenzipjbinding.sourceforge.net/)** (native bundle
+  `-all-platforms`, nessuna dipendenza di sistema).
+- **`FileService.importArchive`** rifattorizzato con overload `(userId, name, format, bytes,
+  parentId)` che instrada per formato; l'API a 4 parametri resta invariata (default ZIP).
+- **WebApp**: il pulsante **Decomprimi** sulle card archivio è ora visibile anche per `.lksrar`
+  e `.lks7z` (`canExtract` esteso a `zip`/`rar`/`7z`).
+- **Dipendenze** (`pom.xml`): aggiunte `com.github.junrar:junrar:7.5.5`,
+  `net.sf.sevenzipjbinding:sevenzipjbinding:16.02-2.01` e
+  `sevenzipjbinding-all-platforms:16.02-2.01`.
+- **Note**: junrar copre il formato RAR4 (RAR5/archivi cifrati → `ARCHIVE_INVALID`); il motore
+  7z nativo viene inizializzato una sola volta (lazy, thread-safe).
+- Bump versione **4.4.3 → 4.5.0** (`pom.xml`, `AppVersion`, `package.json`).
+
+---
+
+## [4.4.3] — 2026-07-04
+
+### `webapp` / `desktop` — blocco creazione utenti oltre il limite di piano
+
+- **UserPicker (landing WebApp)**: il bottone **"Nuovo Utente"** mostra una **mini-card con il piano**
+  attivo e il conteggio utenti (`Piano Free · 3/3`). Se il limite è raggiunto il bottone è
+  **disabilitato**, non apre la registrazione e mostra la **targhetta del piano necessario**
+  (ESSENTIAL/PRO) come copertura, per indicare cosa serve per aggiungere altri utenti.
+- **Pagina `/register`**: banner di avviso e **submit bloccato** quando il limite utenti è raggiunto
+  (copre anche l'accesso diretto dal link "Registrati").
+- **Backend**: nuovo endpoint pubblico `GET /api/auth/register-info`
+  (`UserService.registerInfo`) che espone piano, limite utenti, conteggio e disponibilità, così la
+  UI può bloccare la creazione prima dell'invio. L'enforcement autoritativo resta in
+  `UserService.register` (402 PLAN_LIMIT).
+
+### `desktop` — test allineati ai nuovi limiti
+
+- Aggiornati `ServiceLayerTest` e `ConcurrentMultiUserTest`: i service ora ricevono un
+  `PlanService` (piano **pro** in test, così i test esistenti non urtano i limiti). Aggiunto
+  `userLimitEnforcedOnFreePlan` che verifica il blocco del 4° utente sul piano free.
+
+### Versioning
+
+- Allineamento a **4.4.3** su tutte le componenti.
+
+---
+
+## [4.4.2] — 2026-07-04
+
+### `webapp` / `desktop` — cancellazione account
+
+- **Impostazioni → Sicurezza**: nuova sezione **"Elimina account"** che consente all'utente di
+  cancellare definitivamente il proprio account, previa conferma con la password e modale di
+  conferma. Al termine viene eseguito il logout.
+- **Backend** (`UserService.deleteAccount`, endpoint `DELETE /api/users/me`): rimozione a cascata
+  di **tutti i dati legati all'utente** — credenziali, file LocalDrop (inclusi i blob cifrati su
+  disco), cartelle e categorie di proprietà — e rimozione dell'utente dalle condivisioni altrui.
+  Operazione irreversibile, protetta da verifica password (Argon2).
+
+### Versioning
+
+- Allineamento a **4.4.2** su tutte le componenti.
+
+---
+
+## [4.4.1] — 2026-07-04
+
+Rifiniture e correzioni sulla funzionalità Piani/Pagamenti (task ClickUp `869dumz9h`),
+più due documenti di supporto.
+
+### `webplatform`
+
+- **Pricing**: gli sconti a tempo attivi ora aggiornano il prezzo mostrato nelle card
+  (prezzo di listino barrato + badge sconto); il tab di default è **Mensile**.
+- `.env.example` aggiornato e nuovo `supabase/functions/.env.example` con le variabili di
+  Stripe/PayPal/Supabase.
+
+### `webapp`
+
+- **Modale di conferma** riutilizzabile (`ConfirmProvider`/`useConfirm`) al posto di
+  `window.confirm`/alert del browser (eliminazioni, gating piano).
+- **Notifiche cliccabili**: al click si apre la credenziale o il documento collegato
+  (`?open=<id>` su Dashboard/LocalDrop). Il `NotificationDto` porta ora `resourceId`.
+- **Credenziali**: in modifica i campi **password e secret** sono offuscati finché non si
+  clicca il campo o l'icona occhio; i **campi personalizzati** sono spostati **sopra le note**.
+- **Limiti di piano** con messaggi di upgrade: max cartelle (Free 3), max campi personalizzati
+  per categoria (Free 2 · Essential 4 · Pro 8), targhette e blocchi già presenti.
+
+### `desktop` / `api`
+
+- Nuovo **`PlanService`** (legge il piano da `environment.lks`) e enforcement autoritativo dei
+  limiti: **cartelle** (`FolderService`), **utenti** (`UserService.register`) e **campi
+  personalizzati** per categoria (`CategoryService`), con errore **402 PLAN_LIMIT**.
+- `PlanCatalog.maxCustomFields` (2/4/8) e `SystemStatusDto.planMaxCustomFields` per il gating UI.
+- `NotificationDto`/`ShareReceivedEvent` estesi con `resourceId` per l'apertura diretta.
+
+### Documentazione
+
+- **Setup_Pagamenti_SecureLocalShare.docx**: guida passo-passo per configurare Stripe, PayPal e
+  le Supabase Edge Functions (secret, webhook, deploy, test, troubleshooting).
+- **Contratto_e_Termini_SecureLocalShare.docx**: contratto d'acquisto e Termini e Condizioni.
+
+### Versioning
+
+- Allineamento a **4.4.1** su tutte le componenti.
+
+---
+
+## [4.4.0] — 2026-07-04
+
+Avvio della funzionalità **Piani & Abbonamenti** (task ClickUp "Implementazione Pagamento",
+`869dumz9h`). Questa entry copre la **Fase 1**: modello dati dei piani e **gating delle
+funzionalità** su tutte le app, con report del piano e proposta di redirect alla WebPlatform.
+La **Fase 2** (checkout, pagamenti Stripe/PayPal via Edge Functions, sconti a tempo, card
+Contabilità in `/admin`, acquisto LOCK) è ora implementata — vedi sotto. Resta da fare solo la
+suddivisione delle segnalazioni per piano in `/admin/segnalazioni`.
+
+### `webplatform` / `db` — modello piani e pagina prezzi
+
+- **Migration `0015_v440_plans.sql`**: nuove tabelle `plans` (Free/Essential/Pro con prezzi in
+  centesimi, limiti `max_users`/`max_folders`/`max_upload_bytes` e prezzi scontati dei LOCK) e
+  `plan_features` (matrice *feature → piano minimo*, base di gating e targhette). `registrations.plan`
+  è ora vincolato via FK a `plans(code)`. RPC pubblica `get_plans_catalog()` (catalogo per pricing e
+  app) e RPC admin `admin_plan_accounting()` (conteggi utenti per piano, per la futura card
+  Contabilità). RLS: catalogo in sola lettura pubblica, scrittura solo `service_role`.
+- **Pagina `/pricing`** (`src/pages/Pricing.tsx`) con 3 card (toggle mensile/annuale, piano
+  Essential "consigliato") e tabella degli sconti sui LOCK. Nuova voce **"Prezzi"** nell'header di
+  tutte le pagine landing e nel footer; alias `/prezzi` → `/pricing`.
+- **`src/lib/plans.ts`**: single source of truth lato frontend (allineata al seed della migration),
+  con helper di confronto piani, targhette e formattazione prezzi.
+
+### `desktop` / `api` — dizionario endpoint→piano e gate a pagamento
+
+- **`PlanCatalog`** (`api/plan`): la "pagina unica" richiesta dal task in cui decidere quali endpoint
+  sono a pagamento e quale piano minimo li sblocca (`RULES`), più i limiti quantitativi per piano
+  (`maxUsers`/`maxFolders`). Endpoint non elencati = gratuiti. `PlanTier` modella i livelli con
+  confronto per rank.
+- **`PlanGateFilter`** (registrato in `ApiConfig`, ordine 2 dopo il `JwtFilter`): per ogni richiesta
+  confronta il piano di `environment.lks` con la regola dell'endpoint; se insufficiente risponde
+  **402 PLAN_REQUIRED** con corpo JSON (`feature`, `requiredPlan`, `currentPlan`, `upgradePath`).
+  Nessuna chiamata di rete: funziona identico anche **offline**. Il mirror del piano all'avvio (unica
+  chiamata a Supabase → `environment.lks`, con fallback offline) era già presente in `Main.java`.
+- **Endpoint gated iniziali**: condivisione file e import archivi zip/rar (Essential); compressione e
+  decompressione cartelle (PRO). `/api/system/status` espone ora `planMaxUsers` e `planMaxFolders`.
+
+### `webapp` — targhette, limiti e gestione del 402
+
+- **`src/utils/plans.ts` + `src/hooks/usePlan.ts` + `src/components/PlanBadge.tsx`**: infrastruttura
+  di gating lato UI (matrice feature, targhette ESSENTIAL/PRO, limiti utenti/cartelle). Costante
+  `PLATFORM_URL` per il redirect all'upgrade.
+- **Gestione globale del 402 `PLAN_REQUIRED`** in `service/api.ts` (fetch, upload semplice e upload
+  con progress): un handler in `AuthContext` mostra il **report del piano** e **propone il redirect**
+  alla WebPlatform `/pricing`.
+- **Esempio applicato**: nella creazione categorie il tipo "Documenti" mostra la targhetta
+  **ESSENTIAL** e ne blocca la selezione per i piani che non lo includono.
+
+### `webapp` — correzioni gating e UX (round 2)
+
+- **Targhetta piano come copertura sovrapposta**: `PlanBadge` è ora posizionata in modo assoluto
+  (overlay d'angolo) e non altera più il layout. Applicata via `GatedIconBtn` a condivisione file
+  (ESSENTIAL) e compressione/decompressione cartelle (PRO): se il piano non le include, mostra il
+  report del piano invece di eseguire l'azione.
+- **Blocco archivi in upload**: zip/rar/7z ecc. non sono caricabili se il piano non include
+  `localdrop_archive_load` (ESSENTIAL), sia da AddModal che da drag&drop; nel modale è indicato il
+  **peso massimo per file** del piano attuale.
+- **Piano nella status bar**: la barra di stato mostra il piano attivo dell'utente.
+
+### `webplatform` — dashboard, contabilità e checkout
+
+- **Dashboard**: card "Il tuo piano" con piano attivo, prezzo, highlight e bottone di upgrade → `/pricing`.
+- **`/admin` → tab Contabilità**: utenti per piano (RPC `admin_plan_accounting`), ripartizione,
+  conversione, stima MRR/ARR, ordini pagati e incassato (RPC `admin_orders_summary`) e **gestione
+  degli sconti a tempo** (creazione/attivazione).
+- **Checkout completo** (`/checkout`, `/checkout/result`, `/checkout/simulate`): acquisto di
+  abbonamenti (piani, mensile/annuale) **e** LOCK (ENV/PERM), con scelta provider Stripe/PayPal e
+  applicazione automatica degli sconti a tempo. Prezzo calcolato **server-side**.
+
+### `db` / Edge Functions — ordini, abbonamenti, pagamenti
+
+- **Migration `0016_v440_checkout.sql`**: tabelle `discounts` (sconti a tempo), `orders` (ordini
+  piano/LOCK con stato pagamento) e `subscriptions` (abbonamento corrente). RPC `get_active_discounts`
+  (pubblica) e `admin_orders_summary` (admin). RLS: ordini/abbonamenti visibili solo al proprietario.
+- **Supabase Edge Functions** (`supabase/functions/`): `create-checkout` (prezzo server-side +
+  Stripe Checkout/PayPal, con **fallback simulato** se le chiavi non sono configurate),
+  `simulate-payment`, `stripe-webhook` (verifica firma) e `paypal-webhook`. La finalizzazione
+  dell'ordine aggiorna `registrations.plan` e l'abbonamento. Config e deploy in
+  `supabase/functions/README.md`.
+
+### Versioning
+
+- Numero di versione allineato a **4.4.0** su tutte le componenti: `Web Platform/package.json`,
+  `Web App/package.json`, `Costant.VERSION` (WebApp), `DesktopApp/pom.xml` e `AppVersion.FALLBACK`.
+
+---
+
+## [4.3.9] — 2026-07-02
+
+Barra di progresso per gli upload del LocalDrop e limiti di caricamento dinamici in base al piano
+della licenza. Da task ClickUp "Progress Bar per limiti di upload (v4.3.9)", scope `desktop` +
+`api` + `webapp`. L'upload dei file passa da un modello interamente in memoria (di fatto limitato a
+~2 GB per il tetto degli array Java) a una **pipeline in streaming end-to-end**, così i file possono
+raggiungere i limiti di piano (fino a 20 GB) su heap costante.
+
+### `desktop` / `api` — streaming, limiti per tier e controllo spazio
+
+- **Cifratura in streaming dei blob LocalDrop**: nuovi `CryptoUtils.encryptStream` /
+  `decryptStream` (AES-256-GCM a chunk da 64 KiB) e helper atomici `StoreSupport.encStreamToFile` /
+  `decStreamToOut`. Il layout su disco resta identico (`IV(12) || ciphertext || tag(16)`), quindi i
+  blob esistenti restano leggibili e i nuovi blob sono interscambiabili con il percorso ad array.
+  **Nessun impatto** su vault `.lks`, protocollo di lock/unlock o Tool-CLI: le primitive
+  `encrypt`/`decrypt` esistenti non sono state toccate e la cifratura cambia *solo* per i documenti
+  del LocalDrop.
+- **Upload in streaming**: `FileController` inoltra `MultipartFile#getInputStream()` a
+  `FileService.uploadStream`, che cifra direttamente sul blob senza materializzare il file in un
+  `byte[]`. `spring.servlet.multipart.file-size-threshold=0` fa spillare le parti su file temporaneo.
+- **Download in streaming**: l'endpoint restituisce uno `StreamingResponseBody` che decifra e invia
+  i byte progressivamente (niente più `ByteArrayResource`), con verifica del tag GCM a fine stream.
+- **Limiti dinamici per piano** (`UploadProperties`, prefisso `localdrop.upload.*` in
+  `application.properties`): Gratuito 5 GB, Essential 10 GB, PRO 20 GB. Il tetto del layer multipart
+  è impostato **dinamicamente in base al `planType`** di `environment.lks` all'avvio del backend
+  (`MultipartConfig`); l'enforcement autoritativo e localizzato è in `FileService`. Finché il modello
+  di pagamento (v4.4.0) non esiste, ogni installazione resta `free` ma il meccanismo è già cablato.
+- **Controllo spazio su HOST**: prima di accettare un file ≥ 1 GB il servizio verifica lo spazio
+  libero del volume di storage e risponde `507 INSUFFICIENT_SPACE` con messaggio dedicato se non
+  sufficiente. `GlobalExceptionHandler` mappa anche `MaxUploadSizeExceededException` → `FILE_TOO_LARGE`.
+- **Proxy LAN**: `LanFrontendServer` ora inoltra il body della richiesta in streaming
+  (`BodyPublishers.ofInputStream`) invece di bufferizzarlo, condizione necessaria perché gli upload
+  multi-GB attraversino il reverse-proxy 9505→9507 senza OOM.
+- `/api/system/status` espone `planType`, `maxUploadBytes` e `uploadProgressThresholdBytes`.
+
+### `webapp` — progresso, navigazione durante l'upload e limiti
+
+- **Upload con progresso reale** via `XMLHttpRequest` (`uploadFileWithProgress`): `fetch` non
+  espone il progresso di upload.
+- **`UploadContext` globale**: gestisce l'upload di grandi dimensioni fuori dal ciclo di vita della
+  pagina, così l'utente può **navigare la WebApp** mentre il file termina; una **barra di progresso
+  persistente** (`UploadDock`, montata in `AppShell`) resta visibile tra i cambi di pagina e permette
+  di annullare. Durante un upload > 1.5 GB gli altri caricamenti sono **bloccati** finché non termina.
+- **`LocalDrop`**: i limiti (max per piano, soglia 1.5 GB) arrivano da `/api/system/status`; i file
+  oltre soglia sono instradati nel manager globale con progresso, quelli oltre il limite di piano
+  sono rifiutati con messaggio dedicato (es. «supera il limite del piano Gratuito (5 GB)»); la lista
+  si aggiorna al completamento anche di un upload in background.
 
 ---
 

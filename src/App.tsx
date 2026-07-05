@@ -15,6 +15,7 @@ import { ReleaseTab } from "./pages/admin/ReleaseTab";
 import { ReportsTab } from "./pages/admin/ReportsTab";
 import { DocsManagerTab } from "./pages/admin/DocsManagerTab";
 import { AnalyticsTab } from "./pages/admin/AnalyticsTab";
+import { AccountingTab } from "./pages/admin/AccountingTab";
 import { SetupRequired } from "./pages/SetupRequired";
 import { Privacy } from "./pages/Privacy";
 import { Terms } from "./pages/Terms";
@@ -24,6 +25,10 @@ import { ChiSono } from "./pages/ChiSono";
 import { Funzionalita } from "./pages/Funzionalita";
 import { Sicurezza } from "./pages/Sicurezza";
 import { Recensioni } from "./pages/Recensioni";
+import { Pricing } from "./pages/Pricing";
+import { Checkout } from "./pages/Checkout";
+import { CheckoutResult } from "./pages/CheckoutResult";
+import { CheckoutSimulate } from "./pages/CheckoutSimulate";
 
 // Ad ogni cambio di route (redirect inclusi) riporta la vista in cima alla pagina.
 function ScrollToTop() {
@@ -57,9 +62,15 @@ export default function App() {
       {/* Alias con accento per comodità (URL codificato) */}
       <Route path="/funzionalità" element={<Navigate to="/funzionalita" replace />} />
       <Route path="/sicurezza" element={<Sicurezza />} />
+      <Route path="/pricing" element={<Pricing />} />
+      {/* Alias italiano per comodità */}
+      <Route path="/prezzi" element={<Navigate to="/pricing" replace />} />
       <Route path="/recensioni" element={<Recensioni />} />
+      <Route path="/checkout/result" element={<CheckoutResult />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/checkout/simulate" element={<CheckoutSimulate />} />
       </Route>
       <Route element={<AdminRoute />}>
         <Route path="/admin" element={<AdminLayout />}>
@@ -68,6 +79,7 @@ export default function App() {
           <Route path="segnalazioni" element={<ReportsTab />} />
           <Route path="docs-manager" element={<DocsManagerTab />} />
           <Route path="analytics" element={<AnalyticsTab />} />
+          <Route path="contabilita" element={<AccountingTab />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

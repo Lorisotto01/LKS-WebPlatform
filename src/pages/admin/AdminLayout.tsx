@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { Rocket, Inbox, FileText, BarChart3 } from "lucide-react";
+import { Rocket, Inbox, FileText, BarChart3, Wallet } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 
 const TABS = [
@@ -7,6 +7,7 @@ const TABS = [
   { to: "segnalazioni", label: "Segnalazioni", icon: Inbox },
   { to: "docs-manager", label: "Docs Manager", icon: FileText },
   { to: "analytics", label: "Analytics", icon: BarChart3 },
+  { to: "contabilita", label: "Contabilità", icon: Wallet },
 ];
 
 /** Shell del pannello admin: header + barra tab + contenuto della tab attiva. */
