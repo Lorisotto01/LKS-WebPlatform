@@ -1,16 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, Sparkles, ShieldCheck, ArrowRight, Tag } from "lucide-react";
+import { Check, Sparkles, ShieldCheck, ArrowRight, Tag, HelpCircle } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { PLANS, fmtEuro, type Plan, type PlanCode } from "@/lib/plans";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/utils/cn";
+import { useSeo } from "@/lib/seo";
 
 type Cycle = "month" | "year";
 
 interface ActiveDiscount { id: string; label: string; percent: number; applies_to: string; plan_code: string | null }
 
 export function Pricing() {
+  useSeo({
+    title: "Prezzi — SecureLocalShare | Free, Essential e Pro",
+    description:
+      "Piani SecureLocalShare: inizia gratis, passa a Essential o Pro per più utenti, spazio e sconti sugli sblocchi di licenza. Nessun vincolo, cambi o disdici quando vuoi.",
+    path: "/pricing",
+  });
   const [cycle, setCycle] = useState<Cycle>("month");
   const [discounts, setDiscounts] = useState<ActiveDiscount[]>([]);
 
@@ -36,7 +43,8 @@ export function Pricing() {
           { label: "Funzionalità", href: "/funzionalita" },
           { label: "Sicurezza", href: "/sicurezza" },
           { label: "Prezzi", href: "/pricing" },
-          { label: "Recensioni", href: "/recensioni" },
+          { label: "FAQ", href: "/faq" },
+          // { label: "Recensioni", href: "/recensioni" }, // Nascosto finché non ci sono recensioni reali (task SEO WebPlatform)
           { label: "Chi sono", href: "/chi-sono" },
         ]}
       />
@@ -55,9 +63,19 @@ export function Pricing() {
             Inizia gratis e passa a un piano superiore quando ti serve più spazio, più utenti o gli
             sconti sui blocchi di licenza. Nessun vincolo: cambi o disdici quando vuoi.
           </p>
+          <div>
+             <Link
+            to="/sicurezza#tipi-di-blocco"
+            title="Cosa sono ENV_LOCK e PERMANENT_LOCK?"
+            className="mt-8 inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <HelpCircle className="h-3.5 w-3.5 text-primary" /> Cosa sono i blocchi ENV_LOCK / PERMANENT_LOCK?
+          </Link>
+          </div>
+         
 
           {/* Toggle mensile / annuale */}
-          <div className="mt-8 inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/60 p-1">
+          <div className="mt-4 inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/60 p-1">
             <CycleButton active={cycle === "month"} onClick={() => setCycle("month")}>
               Mensile
             </CycleButton>
@@ -193,7 +211,16 @@ function PlanCard({ plan, cycle, discount }: { plan: Plan; cycle: Cycle; discoun
         <div className="flex items-center gap-1.5 font-medium text-foreground">
           <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Sblocco licenza
         </div>
-        <div className="mt-1.5 flex justify-between">
+        {/* Rassicurazione PRIMA delle cifre: il costo di sblocco non è una perdita di dati. */}
+        <p className="mt-1.5 leading-relaxed">
+          Il tuo vault e i tuoi dati restano <span className="text-foreground">sempre intatti</span>:
+          il blocco è una difesa anti-bruteforce, non una perdita. Solo se serve rigenerare la licenza
+          c'è un costo una tantum.{" "}
+          <Link to="/sicurezza#tipi-di-blocco" className="font-medium text-primary hover:underline">
+            Come funziona
+          </Link>
+        </p>
+        <div className="mt-2 flex justify-between">
           <span>ENV_LOCK</span>
           <span className="font-mono">{fmtEuro(plan.lock.envLock)}</span>
         </div>
@@ -212,9 +239,16 @@ function LockTable() {
       <div className="mb-4 text-center">
         <h2 className="text-2xl font-bold tracking-tight">Sconti sui blocchi di licenza</h2>
         <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
-          In caso di <span className="font-mono text-warning">ENV_LOCK</span> o{" "}
+          Prima di tutto la cosa importante: il <span className="text-foreground">vault e i suoi dati
+          restano sempre al sicuro e intatti</span>. Il blocco è una misura di sicurezza
+          anti-bruteforce, non una perdita di dati. In caso di{" "}
+          <span className="font-mono text-warning">ENV_LOCK</span> o{" "}
           <span className="font-mono text-destructive">PERMANENT_LOCK</span> lo sblocco firmato ha un
-          costo che si riduce con il tuo piano.
+          costo una tantum che si riduce con il tuo piano.{" "}
+          <Link to="/sicurezza#tipi-di-blocco" className="font-medium text-primary hover:underline">
+            Scopri come funzionano i blocchi
+          </Link>
+          .
         </p>
       </div>
       <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40">

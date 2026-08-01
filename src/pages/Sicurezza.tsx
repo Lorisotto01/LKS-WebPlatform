@@ -1,11 +1,27 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   ShieldCheck, Lock, KeyRound, WifiOff, ServerOff, EyeOff, Fingerprint,
   ShieldAlert, Ban, Timer, FileWarning, Globe, ArrowRight,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { useSeo } from "@/lib/seo";
 
 export function Sicurezza() {
+  useSeo({
+    title: "Sicurezza — SecureLocalShare | Crittografia AES-256 e zero cloud",
+    description:
+      "Come SecureLocalShare protegge le tue password: cifratura AES-256-GCM, chiave derivata in locale (PBKDF2 310k), licenza legata all'HWID e blocchi anti-bruteforce ENV_LOCK / PERMANENT_LOCK.",
+    path: "/sicurezza",
+  });
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (!hash) return;
+    // Scroll all'ancora dopo il ScrollToTop globale.
+    const id = hash.replace("#", "");
+    const t = setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+    return () => clearTimeout(t);
+  }, [hash]);
   return (
     <div className="min-h-screen">
       <Navbar
@@ -13,7 +29,8 @@ export function Sicurezza() {
           { label: "Funzionalità", href: "/funzionalita" },
           { label: "Sicurezza", href: "/sicurezza" },
           { label: "Prezzi", href: "/pricing" },
-          { label: "Recensioni", href: "/recensioni" },
+          { label: "FAQ", href: "/faq" },
+          // { label: "Recensioni", href: "/recensioni" }, // Nascosto finché non ci sono recensioni reali (task SEO WebPlatform)
           { label: "Chi sono", href: "/chi-sono" },
         ]}
       />
@@ -66,7 +83,7 @@ export function Sicurezza() {
         </div>
 
         {/* I due tipi di blocco */}
-        <div className="mt-16">
+        <div id="tipi-di-blocco" className="mt-16 scroll-mt-24">
           <SectionHeading icon={ShieldAlert} title="I due tipi di blocco: cause ed effetti" />
           <p className="mt-3 text-muted-foreground">
             Per proteggerti da manomissioni e tentativi di accesso non autorizzati, l'app può entrare in uno stato di
@@ -96,11 +113,15 @@ export function Sicurezza() {
                   Blocco immediato dell'accesso al vault, indipendentemente dai tentativi di password. L'app genera un
                   file <code>lock.lks</code> per l'eventuale procedura con l'autore.
                 </Dd>
-                <Dt>Conseguenza importante</Dt>
+                <Dt>Due vie di recupero</Dt>
                 <Dd>
-                  <strong className="text-warning">Il recupero tramite master password azzera le credenziali:</strong>{" "}
-                  dimostrando il possesso della master password ripristini l'accesso, ma l'ambiente viene ricostruito e
-                  le credenziali di sessione vengono azzerate per sicurezza. Il vault e i suoi dati restano intatti.
+                  <strong className="text-destructive">Master password (gratis, distruttivo):</strong>{" "}
+                  dimostrando il possesso della master password ripristini l'accesso, ma il vault e{" "}
+                  <strong>tutti i dati vengono azzerati definitivamente</strong> e dovrai creare una nuova master
+                  password.{" "}
+                  <strong className="text-primary">unlock.lks dell'autore (conserva i dati):</strong> lo sblocco
+                  firmato mantiene il vault intatto; ti verranno chieste la master password attuale (per riavvolgere
+                  il vault) e una nuova.
                 </Dd>
               </Dl>
             </div>
@@ -130,8 +151,9 @@ export function Sicurezza() {
                 <Dt>Conseguenza importante</Dt>
                 <Dd>
                   Lo sblocco avviene solo applicando l'<code>unlock.lks</code>, che viene verificato per{" "}
-                  <strong>firma digitale, hardware ID e scadenza</strong> prima di ripristinare l'accesso. Senza un
-                  file valido il vault resta inaccessibile su quel PC.
+                  <strong>firma digitale, hardware ID e scadenza</strong> prima di ripristinare l'accesso.{" "}
+                  <strong className="text-primary">I tuoi dati restano intatti:</strong> al termine ti verranno chieste
+                  la master password attuale e una nuova. Senza un file valido il vault resta inaccessibile su quel PC.
                 </Dd>
               </Dl>
             </div>
@@ -160,12 +182,13 @@ export function Sicurezza() {
             </Flow>
             <Flow n="4" tone="danger" title="10° tentativo fallito → PERMANENT_LOCK">
               Blocco permanente del dispositivo. Sbloccabile esclusivamente con un <code>unlock.lks</code> firmato
-              dall'autore.
+              dall'autore, che <strong className="text-primary">conserva i dati</strong> (richiede la master password
+              attuale e una nuova).
             </Flow>
             <Flow n="!" tone="warn" title="Manomissione environment.lks → ENV_LOCK (in qualsiasi momento)">
               Indipendente dal contatore: se l'ambiente viene alterato, il blocco scatta subito. Recuperabile dal
-              proprietario con la master password (che <strong>azzera le credenziali</strong>) o con un{" "}
-              <code>unlock.lks</code> dell'autore.
+              proprietario con la master password (gratis, ma <strong>azzera tutti i dati</strong>) oppure con un{" "}
+              <code>unlock.lks</code> dell'autore, che <strong className="text-primary">conserva i dati</strong>.
             </Flow>
           </ol>
           <div className="mt-5 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm text-muted-foreground">

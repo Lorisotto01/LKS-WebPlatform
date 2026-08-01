@@ -18,6 +18,70 @@
       content="SecureLocalShare - gestore di password e condivisione file sicuro per la tua rete locale. Cifratura AES-256-GCM, offline-first, privato."
     />
     <title>SecureLocalShare - Le tue password, sul tuo PC</title>
+    <link rel="canonical" href="https://securelocalshare.netlify.app/" />
+
+    <!-- Open Graph (default: sovrascritti per pagina dall'hook useSeo) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SecureLocalShare" />
+    <meta property="og:title" content="SecureLocalShare - Le tue password, sul tuo PC" />
+    <meta
+      property="og:description"
+      content="Password manager e condivisione file privati sulla tua rete locale. Niente cloud, i tuoi dati non lasciano mai casa tua."
+    />
+    <meta property="og:url" content="https://securelocalshare.netlify.app/" />
+    <!-- TODO: sostituire con un'immagine social dedicata 1200x630 (es. /og-image.png) -->
+    <meta property="og:image" content="https://securelocalshare.netlify.app/icon-512.png" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SecureLocalShare - Le tue password, sul tuo PC" />
+    <meta
+      name="twitter:description"
+      content="Password manager e condivisione file privati sulla tua rete locale. Niente cloud, i tuoi dati non lasciano mai casa tua."
+    />
+    <meta name="twitter:image" content="https://securelocalshare.netlify.app/icon-512.png" />
+
+    <!-- Dati strutturati: prodotto software con i tre piani (rich snippet) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "SecureLocalShare",
+        "applicationCategory": "SecurityApplication",
+        "applicationSubCategory": "Password Manager",
+        "operatingSystem": "Windows 10, Windows 11",
+        "description": "Password manager e condivisione file privati sulla tua rete locale. Cifratura AES-256-GCM, offline-first, nessun cloud: l'alternativa a 1Password + Google Drive che resta in casa tua.",
+        "url": "https://securelocalshare.netlify.app/",
+        "inLanguage": "it-IT",
+        "author": {
+          "@type": "Person",
+          "name": "Lorenzo Sottocorno"
+        },
+        "offers": [
+          {
+            "@type": "Offer",
+            "name": "Free",
+            "price": "0",
+            "priceCurrency": "EUR",
+            "category": "free"
+          },
+          {
+            "@type": "Offer",
+            "name": "Essential",
+            "price": "4.99",
+            "priceCurrency": "EUR",
+            "category": "subscription"
+          },
+          {
+            "@type": "Offer",
+            "name": "Pro",
+            "price": "9.99",
+            "priceCurrency": "EUR",
+            "category": "subscription"
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

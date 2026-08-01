@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { LogoMark } from "@/components/Logo";
+import { useSeo } from "@/lib/seo";
 
 type Mock = "desktop" | "webapp" | "password" | "localdrop" | "security" | "updates";
 
@@ -69,6 +70,12 @@ const FEATURES: FeatureDef[] = [
 ];
 
 export function Funzionalita() {
+  useSeo({
+    title: "Funzionalità — SecureLocalShare | Password manager e file sharing in LAN",
+    description:
+      "Scopri l'ecosistema SecureLocalShare: app Desktop host, Web App multi-dispositivo, password manager cifrato, LocalDrop per i file e aggiornamenti firmati. Tutto sulla tua rete locale.",
+    path: "/funzionalita",
+  });
   return (
     <div className="min-h-screen">
       <Navbar
@@ -76,7 +83,8 @@ export function Funzionalita() {
           { label: "Funzionalità", href: "/funzionalita" },
           { label: "Sicurezza", href: "/sicurezza" },
           { label: "Prezzi", href: "/pricing" },
-          { label: "Recensioni", href: "/recensioni" },
+          { label: "FAQ", href: "/faq" },
+          // { label: "Recensioni", href: "/recensioni" }, // Nascosto finché non ci sono recensioni reali (task SEO WebPlatform)
           { label: "Chi sono", href: "/chi-sono" },
         ]}
       />

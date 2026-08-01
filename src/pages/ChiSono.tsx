@@ -2,9 +2,16 @@ import { useEffect, useState } from "react";
 import { User, Mail, MapPin, Link2, Sparkles } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { getAuthorProfile } from "@/lib/profile";
+import { useSeo } from "@/lib/seo";
 import type { AuthorProfile } from "@/types/database.types";
 
 export function ChiSono() {
+  useSeo({
+    title: "Chi sono — SecureLocalShare | L'autore del progetto",
+    description:
+      "La storia e la visione dietro SecureLocalShare: perché ho creato l'alternativa a 1Password + Google Drive che resta in casa tua, senza cloud e senza compromessi sulla privacy.",
+    path: "/chi-sono",
+  });
   const [profile, setProfile] = useState<AuthorProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -25,7 +32,8 @@ export function ChiSono() {
           { label: "Funzionalità", href: "/funzionalita" },
           { label: "Sicurezza", href: "/sicurezza" },
           { label: "Prezzi", href: "/pricing" },
-          { label: "Recensioni", href: "/recensioni" },
+          { label: "FAQ", href: "/faq" },
+          // { label: "Recensioni", href: "/recensioni" }, // Nascosto finché non ci sono recensioni reali (task SEO WebPlatform)
           { label: "Chi sono", href: "/chi-sono" },
         ]}
       />

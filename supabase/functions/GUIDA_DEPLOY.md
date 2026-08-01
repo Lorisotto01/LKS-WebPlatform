@@ -28,6 +28,15 @@ Apri **Supabase → SQL Editor → New query**, poi copia e incolla il contenuto
 uno alla volta e in ordine:
 - `supabase/migrations/0015_v440_plans.sql`
 - `supabase/migrations/0016_v440_checkout.sql`
+- `supabase/migrations/0017_v442_subscription_expiry.sql`
+- `supabase/migrations/0018_v450_recurring_unlocks.sql`
+- `supabase/migrations/0019_v460_lock_events.sql`  ⬅️ crea `lock_events` + RPC `report_lock`/`active_lock_type`/`resolve_locks`
+- `supabase/migrations/0020_v461_report_lock_text_ts.sql`  ⬅️ robustezza di `report_lock` (obbligatoria)
+
+> ⚠️ **Importante:** senza 0019 + 0020 la DesktopApp non riesce a scrivere i blocchi: gli eventi
+> restano in `cfg/lock_queue.json` sul PC e la RPC `report_lock` risponde **404** (funzione non
+> trovata), quindi in `lock_events` non compare nulla. Applicando le due migration, alla successiva
+> apertura dell'app la coda locale viene ri-sincronizzata automaticamente.
 
 ## 2) Carica le funzioni di pagamento
 
@@ -36,8 +45,14 @@ npm run functions:deploy
 ```
 
 Questo comando pubblica in un colpo solo: `create-checkout`, `simulate-payment`, `stripe-webhook`,
-`paypal-webhook`. Da questo momento il **checkout funziona in modalità simulata** (nessun addebito
-reale): puoi già provare l'acquisto di un piano dall'inizio alla fine.
+`paypal-webhook`, `send-unlock-email` e `device-unlock`. Da questo momento il **checkout funziona in
+modalità simulata** (nessun addebito reale): puoi già provare l'acquisto di un piano dall'inizio alla
+fine.
+
+> `device-unlock` viene pubblicata con `--no-verify-jwt` perché è chiamata dalla DesktopApp con la
+> chiave pubblica (l'autenticazione del dispositivo — `hwid` + `activation_token` — avviene dentro la
+> function). È ciò che permette alla DesktopApp di **scaricare e verificare in automatico** l'unlock
+> caricato dall'admin.
 
 ## 3) (Facoltativo) Attiva i pagamenti veri Stripe/PayPal
 
@@ -47,8 +62,11 @@ reale): puoi già provare l'acquisto di un piano dall'inizio alla fine.
    npm run functions:secrets
    ```
 3. Configura i webhook su Stripe/PayPal verso:
-   - `https://<PROJECT-REF>.functions.supabase.co/stripe-webhook`
-   - `https://<PROJECT-REF>.functions.supabase.co/paypal-webhook`
+   - Stripe → `https://<PROJECT-REF>.functions.supabase.co/stripe-webhook`
+     eventi: **checkout.session.completed**, **invoice.paid**, **customer.subscription.deleted**
+   - PayPal → `https://<PROJECT-REF>.functions.supabase.co/paypal-webhook`
+     eventi: **PAYMENT.CAPTURE.COMPLETED**, **CHECKOUT.ORDER.APPROVED**
+   - (Opzionale) Email sblocchi: imposta `RESEND_API_KEY` e `RESEND_FROM` nei secret.
 
 I dettagli (dove prendere le chiavi, quali eventi ascoltare, carta di test) sono nel documento
 `Documentazione/Setup_Pagamenti_SecureLocalShare.docx`.

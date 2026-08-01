@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Download, Sparkles, Clock, RefreshCw, Mail, User, MonitorDown, Trash2, Crown, ArrowUpRight } from "lucide-react";
+import { Download, Sparkles, Clock, RefreshCw, Mail, User, MonitorDown, Trash2, Crown, ArrowUpRight, Receipt, KeyRound, Repeat } from "lucide-react";
 import { supabase, RELEASES_BUCKET, SIGNED_URL_TTL_SECONDS } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/toast";
@@ -9,7 +9,11 @@ import { ActivationCard } from "@/components/ActivationCard";
 import { ReviewForm } from "@/components/ReviewForm";
 import { Button } from "@/components/ui/button";
 import { ensureActivation } from "@/lib/activations";
-import type { Release, Download as DownloadRow } from "@/types/database.types";
+import type { Release, Download as DownloadRow, Database } from "@/types/database.types";
+
+type Order = Database["public"]["Tables"]["orders"]["Row"];
+type UnlockFile = Database["public"]["Tables"]["unlock_files"]["Row"];
+type Subscription = Database["public"]["Tables"]["subscriptions"]["Row"];
 import { getPlan, fmtEuro, type PlanCode } from "@/lib/plans";
 
 export function Dashboard() {
@@ -23,6 +27,9 @@ export function Dashboard() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [plan, setPlan] = useState<PlanCode>("free");
+  const [sub, setSub] = useState<Subscription | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [unlocks, setUnlocks] = useState<Record<string, UnlockFile>>({});
 
   const load = async () => {
     setLoading(true);
@@ -38,6 +45,18 @@ export function Dashboard() {
     setHistory(dl.data ?? []);
     const pc = (reg.data?.plan ?? "free").toLowerCase();
     setPlan((["free", "essential", "pro"].includes(pc) ? pc : "free") as PlanCode);
+    if (user?.email) {
+      const [ord, sb, uf] = await Promise.all([
+        supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(20),
+        supabase.from("subscriptions").select("*").maybeSingle(),
+        supabase.from("unlock_files").select("*"),
+      ]);
+      setOrders((ord.data as Order[] | null) ?? []);
+      setSub((sb.data as Subscription | null) ?? null);
+      const um: Record<string, UnlockFile> = {};
+      for (const u of (uf.data as UnlockFile[] | null) ?? []) um[u.order_id] = u;
+      setUnlocks(um);
+    }
     // GDPR (C2): il nome viene letto solo da user_metadata (niente più query a registrations.name).
     setName(
       (user?.user_metadata?.name as string | undefined) ??
@@ -233,7 +252,11 @@ export function Dashboard() {
           {/* ============ DX — Dati account ============ */}
           <div className="order-2 space-y-6 lg:order-2">
             {/* 0 — Piano attuale */}
-            <PlanStatusCard plan={plan} onUpgrade={() => navigate("/pricing")} />
+            <PlanStatusCard plan={plan} sub={sub} onUpgrade={() => navigate("/pricing")}
+              onRenew={() => navigate(`/checkout?plan=${plan}&cycle=${sub?.billing_cycle === "year" ? "year" : "month"}`)} />
+
+            {/* I miei ordini e pagamenti */}
+            <MyOrders orders={orders} unlocks={unlocks} onChanged={load} />
 
             {/* 1 — Email e nome */}
             <section>
@@ -312,7 +335,7 @@ export function Dashboard() {
   );
 }
 
-function PlanStatusCard({ plan, onUpgrade }: { plan: PlanCode; onUpgrade: () => void }) {
+function PlanStatusCard({ plan, sub, onUpgrade, onRenew }: { plan: PlanCode; sub: Subscription | null; onUpgrade: () => void; onRenew: () => void }) {
   const p = getPlan(plan);
   const isFree = plan === "free";
   const tone = plan === "pro" ? "#A78BFA" : plan === "essential" ? "#F59E0B" : "#8A94A6";
@@ -346,16 +369,82 @@ function PlanStatusCard({ plan, onUpgrade }: { plan: PlanCode; onUpgrade: () => 
           ))}
         </ul>
 
-        <div className="mt-5 flex items-center gap-3">
+        {!isFree && sub?.current_period_end && (
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Clock className="h-3.5 w-3.5" />
+            {sub.auto_renew && !sub.cancel_at_period_end
+              ? <>Rinnovo automatico il <strong className="text-foreground">{new Date(sub.current_period_end).toLocaleDateString("it-IT")}</strong></>
+              : <>Scade il <strong className="text-foreground">{new Date(sub.current_period_end).toLocaleDateString("it-IT")}</strong></>}
+          </div>
+        )}
+        <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
             onClick={onUpgrade}
             className="inline-flex items-center gap-2 rounded-lg bg-brand-gradient px-4 py-2 text-sm font-medium text-white shadow-glow transition-opacity hover:opacity-90"
           >
             {isFree ? <><Sparkles className="h-4 w-4" /> Fai l'upgrade</> : <><ArrowUpRight className="h-4 w-4" /> Cambia piano</>}
           </button>
+          {!isFree && (
+            <button onClick={onRenew} className="inline-flex items-center gap-2 rounded-lg border border-input px-4 py-2 text-sm font-medium hover:bg-accent">
+              <Repeat className="h-4 w-4" /> Rinnova ora
+            </button>
+          )}
           {isFree && <span className="text-xs text-muted-foreground">Sblocca più spazio, utenti e funzionalità.</span>}
         </div>
       </div>
+    </section>
+  );
+}
+
+function MyOrders({ orders, unlocks, onChanged }: { orders: Order[]; unlocks: Record<string, UnlockFile>; onChanged: () => void }) {
+  const eur = (c: number) => `${(c / 100).toFixed(2)}€`;
+  const desc = (o: Order) =>
+    o.kind === "subscription"
+      ? `${o.plan_code ?? ""} · ${o.billing_cycle === "year" ? "annuale" : "mensile"}`
+      : o.lock_type === "perm" ? "PERMANENT_LOCK" : "ENV_LOCK";
+
+  const download = async (uf: UnlockFile) => {
+    const { data } = await supabase.storage.from("unlocks").createSignedUrl(uf.storage_path, 3600);
+    if (data?.signedUrl) {
+      window.location.href = data.signedUrl;
+      await supabase.rpc("mark_unlock_downloaded", { p_id: uf.id });
+      onChanged();
+    }
+  };
+
+  return (
+    <section>
+      <h2 className="flex items-center gap-2 text-lg font-semibold"><Receipt className="h-5 w-5 text-primary" /> I miei ordini e pagamenti</h2>
+      {orders.length === 0 ? (
+        <p className="mt-3 rounded-lg border bg-card/40 p-5 text-sm text-muted-foreground">Nessun ordine effettuato.</p>
+      ) : (
+        <ul className="mt-4 space-y-2.5">
+          {orders.map((o) => {
+            const uf = o.kind === "lock" ? unlocks[o.id] : undefined;
+            return (
+              <li key={o.id} className="flex flex-wrap items-center gap-3 rounded-lg border bg-card/50 px-4 py-3 text-sm">
+                <span className="grid h-8 w-8 place-items-center rounded-md bg-primary/10 text-primary">
+                  {o.kind === "subscription" ? <Repeat className="h-4 w-4" /> : <KeyRound className="h-4 w-4" />}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-medium">{desc(o)}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString("it-IT")} · {o.provider}</p>
+                </div>
+                <span className="ml-auto font-mono">{eur(o.amount_cents)}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${o.status === "paid" ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>{o.status}</span>
+                {uf && (
+                  <button onClick={() => download(uf)} className="inline-flex items-center gap-1.5 rounded-lg bg-brand-gradient px-3 py-1.5 text-xs font-medium text-white shadow-glow hover:opacity-90">
+                    <Download className="h-3.5 w-3.5" /> Scarica sblocco
+                  </button>
+                )}
+                {o.kind === "lock" && !uf && o.status === "paid" && (
+                  <span className="text-xs text-muted-foreground">Sblocco in preparazione…</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
   );
 }

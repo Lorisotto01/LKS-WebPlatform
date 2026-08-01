@@ -25,6 +25,7 @@ import {
 import { Navbar } from "@/components/Navbar";
 import { Logo, LogoMark } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
+import { useSeo } from "@/lib/seo";
 
 const STEPS = [
   { icon: MonitorDown, title: "Installa sul PC di casa", text: "Un solo eseguibile firmato. Nessuna configurazione complicata, nessun account cloud richiesto." },
@@ -34,7 +35,7 @@ const STEPS = [
 
 const FEATURES = [
   { icon: Lock, title: "AES-256-GCM", text: "Ogni vault è un file .lks cifrato con AES-256-GCM. In chiaro non finisce mai nulla, su nessun disco." },
-  { icon: KeyRound, title: "PBKDF2 · 310k iter.", text: "La master password è derivata con 310.000 iterazioni PBKDF2: forza bruta resa impraticabile." },
+  { icon: KeyRound, title: "Master password blindata", text: "La tua master password non lascia mai il PC ed è protetta contro i tentativi a forza bruta. I dettagli tecnici nella pagina Sicurezza." },
   { icon: WifiOff, title: "Offline-first", text: "Funziona senza Internet. Nessun server di terze parti vede le tue credenziali, mai." },
   { icon: Users, title: "Multi-utente LAN", text: "Più persone, più vault sullo stesso server di casa, ognuno isolato e protetto." },
   { icon: Fingerprint, title: "Licenza per dispositivo", text: "L'attivazione lega la licenza all'hardware del tuo PC: nessuna copia non autorizzata." },
@@ -46,6 +47,12 @@ const TECH = ["Java 21", "Spring Boot 3.5", "React 18", "Tailwind", "Supabase"];
 export function Home() {
   const navigate = useNavigate();
   const goDownload = () => navigate("/register");
+  useSeo({
+    title: "SecureLocalShare — L'alternativa a 1Password + Google Drive che resta in casa tua",
+    description:
+      "Password manager e condivisione file privati sulla tua rete locale. Niente cloud, niente abbonamenti obbligatori: i tuoi dati non lasciano mai casa tua. Per Windows.",
+    path: "/",
+  });
 
   return (
     <div className="min-h-screen">
@@ -54,7 +61,8 @@ export function Home() {
           { label: "Funzionalità", href: "/funzionalita" },
           { label: "Sicurezza", href: "/sicurezza" },
           { label: "Prezzi", href: "/pricing" },
-          { label: "Recensioni", href: "/recensioni" },
+          { label: "FAQ", href: "/faq" },
+          // { label: "Recensioni", href: "/recensioni" }, // Nascosto finché non ci sono recensioni reali (task SEO WebPlatform)
           { label: "Chi sono", href: "/chi-sono" },
         ]}
       />
@@ -75,9 +83,10 @@ export function Home() {
               <span className="text-brand-gradient">Solo tue.</span>
             </h1>
             <p className="mt-6 max-w-md text-lg text-muted-foreground">
-              Un password manager privato che gira sulla{" "}
-              <span className="text-foreground">tua rete locale</span>. Niente cloud, niente abbonamenti,
-              niente che lasci casa tua.
+              L'alternativa a <span className="text-foreground">1Password + Google Drive</span> che
+              resta in casa tua: password e file al sicuro sulla{" "}
+              <span className="text-foreground">tua rete locale</span>. Niente cloud, niente
+              abbonamenti obbligatori, niente che lasci casa tua.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button size="lg" onClick={goDownload} className="bg-brand-gradient shadow-glow hover:opacity-90">
@@ -100,6 +109,35 @@ export function Home() {
           </div>
         </div>
       </section>
+
+      {/*
+        ---------------- Prova sociale (PLACEHOLDER) ----------------
+        TODO (task SEO WebPlatform): inserire numeri REALI prima di pubblicare.
+        Non inventare dati. Quando disponibili, sostituire i valori "—" e
+        decommentare la <section> qui sotto per attivare la fascia di prova sociale.
+        Metriche suggerite: utenti attivi, download, stelle GitHub, valutazione media.
+
+        <section className="border-t border-border/50 bg-card/20">
+          <div className="mx-auto grid max-w-4xl grid-cols-2 gap-6 px-6 py-10 text-center sm:grid-cols-4">
+            <div>
+              <div className="text-3xl font-extrabold text-brand-gradient">—</div>
+              <div className="mt-1 text-xs text-muted-foreground">Utenti attivi</div>
+            </div>
+            <div>
+              <div className="text-3xl font-extrabold text-brand-gradient">—</div>
+              <div className="mt-1 text-xs text-muted-foreground">Download</div>
+            </div>
+            <div>
+              <div className="text-3xl font-extrabold text-brand-gradient">—</div>
+              <div className="mt-1 text-xs text-muted-foreground">Stelle GitHub</div>
+            </div>
+            <div>
+              <div className="text-3xl font-extrabold text-brand-gradient">—</div>
+              <div className="mt-1 text-xs text-muted-foreground">Valutazione media</div>
+            </div>
+          </div>
+        </section>
+      */}
 
       {/* ---------------- How it works ---------------- */}
       <section id="funzionalita" className="border-t border-border/50 bg-card/20">
@@ -126,6 +164,13 @@ export function Home() {
       <section id="sicurezza">
         <div className="mx-auto max-w-6xl px-6 py-20">
           <SectionHeading badge="Sicurezza" title="Pensato per chi non si fida" />
+          {/*
+            INCOERENZA DA RISOLVERE (task SEO WebPlatform, punto 11):
+            il testo dichiara "codice aperto" ma non esiste un repository GitHub pubblico
+            collegato. Nessun link al repo è stato aggiunto per non creare un link rotto.
+            Scelta a Lorenzo: (a) rendere pubblico il repo e aggiungere il link in header/footer,
+            oppure (b) rimuovere/riformulare la dicitura "codice aperto" qui sotto.
+          */}
           <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
             Crittografia di livello militare, codice aperto, nessun compromesso sull'architettura.
           </p>
@@ -359,7 +404,7 @@ function SiteFooter() {
         { label: "Funzionalità", to: "/funzionalita", kind: "route" as const },
         { label: "Sicurezza", to: "/sicurezza", kind: "route" as const },
         { label: "Prezzi", to: "/pricing", kind: "route" as const },
-        { label: "Recensioni", to: "/recensioni", kind: "route" as const },
+        // { label: "Recensioni", to: "/recensioni", kind: "route" as const }, // Nascosto finché non ci sono recensioni reali (task SEO WebPlatform)
         { label: "Changelog", to: "/changelog", kind: "route" as const },
       ],
     },
@@ -367,6 +412,7 @@ function SiteFooter() {
       title: "Risorse",
       links: [
         { label: "Documentazione", to: "/docs", kind: "route" as const },
+        { label: "FAQ", to: "/faq", kind: "route" as const },
         { label: "Chi sono", to: "/chi-sono", kind: "route" as const },
         { label: "Privacy", to: "/privacy", kind: "route" as const },
         { label: "Termini", to: "/terms", kind: "route" as const },

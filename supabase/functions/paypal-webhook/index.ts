@@ -13,12 +13,14 @@ Deno.serve(async (req) => {
   try {
     const event = await req.json();
     const type = event.event_type as string | undefined;
+    console.log("[paypal-webhook] evento:", type);
     if (type === "PAYMENT.CAPTURE.COMPLETED" || type === "CHECKOUT.ORDER.APPROVED") {
       const res = event.resource ?? {};
       const orderId =
         res.custom_id ||
         res.purchase_units?.[0]?.custom_id ||
         res.supplementary_data?.related_ids?.order_id;
+      console.log("[paypal-webhook] finalizzo ordine:", orderId);
       if (orderId) await finalizeOrder(adminClient(), orderId);
     }
     return json({ received: true });

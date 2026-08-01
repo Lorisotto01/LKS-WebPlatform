@@ -25,6 +25,8 @@ export function Checkout() {
   const [busy, setBusy] = useState(false);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [currentPlan, setCurrentPlan] = useState<PlanCode>("free");
+  const [hwid, setHwid] = useState(params.get("hwid") ?? "");
+  const [recurring, setRecurring] = useState(true);
 
   useEffect(() => {
     if (!user) { navigate(`/login?next=${encodeURIComponent(location.pathname + location.search)}`, { replace: true }); return; }
@@ -60,6 +62,7 @@ export function Checkout() {
   const finalPrice = discount ? summary.base * (1 - discount.percent / 100) : summary.base;
 
   const pay = async () => {
+    if (kind === "lock" && !hwid.trim()) { toast.error("Inserisci l'HWID del dispositivo da sbloccare."); return; }
     setBusy(true);
     try {
       const res = await startCheckout({
@@ -67,6 +70,8 @@ export function Checkout() {
         planCode: kind === "subscription" ? planParam : undefined,
         billingCycle: kind === "subscription" ? cycle : undefined,
         lockType: kind === "lock" ? (lockParam as "env" | "perm") : undefined,
+        hwid: kind === "lock" ? (hwid.trim() || undefined) : undefined,
+        recurring: kind === "subscription" ? recurring : undefined,
         provider,
       });
       window.location.href = res.url; // redirect a Stripe/PayPal o alla pagina simulata
@@ -106,6 +111,31 @@ export function Checkout() {
           </div>
         </div>
 
+        {/* Lock: HWID del dispositivo */}
+        {kind === "lock" && (
+          <div className="mt-6 rounded-xl border bg-card/60 p-4">
+            <label className="text-sm font-medium">HWID del dispositivo da sbloccare</label>
+            <p className="mt-1 text-xs text-muted-foreground">Lo trovi nella schermata di blocco della DesktopApp. Serve per generarti il file di sblocco corretto.</p>
+            <input
+              className="mt-2 w-full rounded-lg border border-input bg-background/60 px-3 py-2 font-mono text-sm"
+              placeholder="es. A1B2-C3D4-…" value={hwid} onChange={(e) => setHwid(e.target.value)}
+            />
+          </div>
+        )}
+
+        {/* Abbonamento: rinnovo automatico */}
+        {kind === "subscription" && (
+          <label className="mt-6 flex cursor-pointer items-center gap-3 rounded-xl border bg-card/60 p-4">
+            <input type="checkbox" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} className="h-4 w-4 accent-[hsl(var(--primary))]" />
+            <span>
+              <span className="text-sm font-medium">Rinnovo automatico</span>
+              <span className="block text-xs text-muted-foreground">
+                {recurring ? "L'abbonamento si rinnova da solo a fine periodo (puoi disdire quando vuoi)." : "Paghi solo questo periodo; ti avviseremo prima della scadenza per rinnovare."}
+              </span>
+            </span>
+          </label>
+        )}
+
         {/* Provider */}
         <div className="mt-6 grid grid-cols-2 gap-3">
           <ProviderBtn active={provider === "stripe"} onClick={() => setProvider("stripe")} icon={<CreditCard className="h-4 w-4" />} label="Carta (Stripe)" />
@@ -114,7 +144,7 @@ export function Checkout() {
 
         <button
           onClick={pay}
-          disabled={busy}
+          disabled={busy || (kind === "lock" && !hwid.trim())}
           className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-gradient px-5 py-3 text-sm font-semibold text-white shadow-glow transition-opacity hover:opacity-90 disabled:opacity-60"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}

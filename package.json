@@ -1,7 +1,7 @@
 {
   "name": "securelocalshare-web",
   "private": true,
-  "version": "4.4.3",
+  "version": "4.7.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,7 +15,7 @@
     "sb:link": "supabase link",
     "functions:serve": "supabase functions serve",
     "functions:secrets": "supabase secrets set --env-file supabase/functions/.env",
-    "functions:deploy": "supabase functions deploy create-checkout && supabase functions deploy simulate-payment && supabase functions deploy stripe-webhook --no-verify-jwt && supabase functions deploy paypal-webhook --no-verify-jwt",
+    "functions:deploy": "supabase functions deploy create-checkout && supabase functions deploy simulate-payment && supabase functions deploy stripe-webhook --no-verify-jwt && supabase functions deploy paypal-webhook --no-verify-jwt && supabase functions deploy send-unlock-email && supabase functions deploy device-unlock --no-verify-jwt",
     "db:push": "supabase db push"
   },
   "dependencies": {

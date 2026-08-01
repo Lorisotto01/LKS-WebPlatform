@@ -1,0 +1,27 @@
+# robots.txt — SecureLocalShare
+# Le pagine pubbliche/marketing sono indicizzabili; le aree applicative e di
+# autenticazione no (nessun valore SEO, contenuto privato o dietro login).
+
+User-agent: *
+Allow: /$
+Allow: /funzionalita
+Allow: /sicurezza
+Allow: /pricing
+Allow: /chi-sono
+Allow: /recensioni
+Allow: /faq
+Allow: /docs
+Allow: /changelog
+Allow: /privacy
+Allow: /terms
+
+Disallow: /login
+Disallow: /register
+Disallow: /verify-email
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /checkout
+
+Sitemap: https://securelocalshare.netlify.app/sitemap.xml

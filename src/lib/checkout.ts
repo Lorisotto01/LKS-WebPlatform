@@ -7,6 +7,8 @@ export interface CheckoutInput {
   billingCycle?: "month" | "year";
   lockType?: "env" | "perm";
   provider?: "stripe" | "paypal";
+  hwid?: string;
+  recurring?: boolean;
 }
 
 export interface CheckoutResponse {

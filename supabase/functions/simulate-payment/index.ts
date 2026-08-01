@@ -31,6 +31,7 @@ Deno.serve(async (req) => {
     if (order.provider !== "simulated") return json({ error: "not_simulated" }, 400);
     if (order.status === "paid") return json({ ok: true, alreadyPaid: true });
 
+    console.log("[simulate-payment] finalizzo ordine simulato:", orderId);
     await finalizeOrder(admin, orderId);
     return json({ ok: true, orderId });
   } catch (e) {

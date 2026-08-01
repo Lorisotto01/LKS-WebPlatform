@@ -5,9 +5,21 @@ import { Navbar } from "@/components/Navbar";
 import { StarRating } from "@/components/StarRating";
 import { useAuth } from "@/context/AuthContext";
 import { listReviews } from "@/lib/reviews";
+import { useSeo } from "@/lib/seo";
 import type { Review } from "@/types/database.types";
 
+// Task SEO WebPlatform: le recensioni reali non sono ancora disponibili. Finché non lo
+// saranno, mostriamo un placeholder neutro invece dell'elenco (che conteneva una recensione
+// autoprodotta con riferimenti a bug). Rimettere a `true` per riattivare l'elenco reale.
+const SHOW_REVIEWS = false;
+
 export function Recensioni() {
+  useSeo({
+    title: "Recensioni — SecureLocalShare",
+    description:
+      "Le esperienze di chi usa SecureLocalShare, il password manager privato che resta sulla tua rete locale. Presto i primi riscontri reali dei nostri utenti.",
+    path: "/recensioni",
+  });
   const { user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +44,8 @@ export function Recensioni() {
           { label: "Funzionalità", href: "/funzionalita" },
           { label: "Sicurezza", href: "/sicurezza" },
           { label: "Prezzi", href: "/pricing" },
-          { label: "Recensioni", href: "/recensioni" },
+          { label: "FAQ", href: "/faq" },
+          // { label: "Recensioni", href: "/recensioni" }, // Nascosto finché non ci sono recensioni reali (task SEO WebPlatform)
           { label: "Chi sono", href: "/chi-sono" },
         ]}
       />
@@ -44,7 +57,7 @@ export function Recensioni() {
             <MessageSquareQuote className="h-3.5 w-3.5 text-primary" /> Recensioni
           </span>
           <h1 className="mt-6 text-3xl font-extrabold tracking-tight sm:text-4xl">Cosa dicono gli utenti</h1>
-          {reviews.length > 0 && (
+          {SHOW_REVIEWS && reviews.length > 0 && (
             <div className="mt-5 inline-flex items-center gap-3 rounded-full border border-border/70 bg-card/60 px-5 py-2">
               <StarRating value={Math.round(overallAvg)} size={18} />
               <span className="text-sm">
@@ -75,7 +88,16 @@ export function Recensioni() {
       </section>
 
       <main className="mx-auto max-w-6xl px-6 py-14">
-        {loading ? (
+        {!SHOW_REVIEWS ? (
+          // Placeholder neutro finché non ci sono recensioni reali da mostrare.
+          <div className="mx-auto max-w-lg rounded-xl border bg-card/40 p-10 text-center">
+            <p className="text-lg font-semibold">Presto le prime recensioni dei nostri utenti</p>
+            <p className="mt-2 text-muted-foreground">
+              Stiamo raccogliendo i primi riscontri di chi usa SecureLocalShare. Torna a trovarci a
+              breve per leggere le esperienze reali.
+            </p>
+          </div>
+        ) : loading ? (
           <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="h-40 animate-pulse rounded-xl border bg-card/40" />

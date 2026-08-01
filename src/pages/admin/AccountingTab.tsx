@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Users, Crown, RefreshCw, Wallet, Star, Percent, Plus, Trash2, ShoppingCart } from "lucide-react";
+import { Users, Crown, RefreshCw, Wallet, Star, Percent, Plus, Trash2, ShoppingCart, History, KeyRound, Upload, Mail, Repeat } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,20 @@ import { getPlan, fmtEuro, PLANS } from "@/lib/plans";
 import type { Database } from "@/types/database.types";
 
 type Discount = Database["public"]["Tables"]["discounts"]["Row"];
+type Order = Database["public"]["Tables"]["orders"]["Row"];
+type UnlockFile = Database["public"]["Tables"]["unlock_files"]["Row"];
 interface OrdersSummary { paid_orders: number; revenue_cents: number }
+/** Blocco dispositivo registrato dalla DesktopApp (lock_events). Tipizzato localmente per
+ *  robustezza anche se i tipi generati non fossero aggiornati. */
+interface LockEvent {
+  id: string;
+  hwid: string;
+  email: string | null;
+  lock_type: "env" | "perm";
+  app_version: string | null;
+  occurred_at: string;
+  resolved: boolean;
+}
 
 interface Accounting { total: number; free: number; essential: number; pro: number }
 
@@ -98,6 +111,12 @@ export function AccountingTab() {
 
       {/* Sconti a tempo */}
       <DiscountsManager />
+
+      {/* Storico ordini */}
+      <OrdersHistory />
+
+      {/* Gestione sblocchi LOCK */}
+      <UnlockManager />
     </div>
   );
 }
@@ -228,5 +247,178 @@ function Kpi({
         </div>
       </div>
     </div>
+  );
+}
+
+
+const KIND_LABEL: Record<string, string> = { subscription: "Abbonamento", lock: "Sblocco LOCK" };
+const STATUS_TONE: Record<string, string> = { paid: "#10B981", pending: "#F59E0B", failed: "#EF4444", canceled: "#8A94A6" };
+function eur(cents: number) { return fmtEuro(Number((cents / 100).toFixed(2))); }
+function orderDesc(o: Order): string {
+  if (o.kind === "subscription") return `${o.plan_code ?? ""} · ${o.billing_cycle === "year" ? "annuale" : "mensile"}${o.is_recurring ? " · auto" : ""}`;
+  return o.lock_type === "perm" ? "PERMANENT_LOCK" : "ENV_LOCK";
+}
+
+function OrdersHistory() {
+  const toast = useToast();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(100);
+    if (error) toast.error("Caricamento ordini non riuscito.");
+    setOrders((data as Order[] | null) ?? []);
+    setLoading(false);
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  return (
+    <section className="rounded-xl border bg-card/60 p-6 shadow-card">
+      <div className="flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-lg font-semibold"><History className="h-5 w-5 text-primary" /> Storico ordini</h2>
+        <Button variant="outline" size="sm" onClick={load} disabled={loading}><RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /> Ricarica</Button>
+      </div>
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border/60 text-left text-muted-foreground">
+              <th className="px-3 py-2 font-medium">Data</th>
+              <th className="px-3 py-2 font-medium">Utente</th>
+              <th className="px-3 py-2 font-medium">Tipo</th>
+              <th className="px-3 py-2 font-medium">Dettaglio</th>
+              <th className="px-3 py-2 text-right font-medium">Importo</th>
+              <th className="px-3 py-2 font-medium">Provider</th>
+              <th className="px-3 py-2 font-medium">Stato</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.length === 0 ? (
+              <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">{loading ? "…" : "Nessun ordine."}</td></tr>
+            ) : orders.map((o) => (
+              <tr key={o.id} className="border-b border-border/40 last:border-0">
+                <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">{new Date(o.created_at).toLocaleDateString("it-IT")}</td>
+                <td className="px-3 py-2 max-w-[160px] truncate" title={o.email}>{o.email}</td>
+                <td className="px-3 py-2">{o.kind === "subscription" ? <Repeat className="mr-1 inline h-3.5 w-3.5 text-primary" /> : <KeyRound className="mr-1 inline h-3.5 w-3.5 text-warning" />}{KIND_LABEL[o.kind] ?? o.kind}</td>
+                <td className="px-3 py-2 text-muted-foreground">{orderDesc(o)}</td>
+                <td className="px-3 py-2 text-right font-mono">{eur(o.amount_cents)}</td>
+                <td className="px-3 py-2 capitalize text-muted-foreground">{o.provider}</td>
+                <td className="px-3 py-2"><span className="rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ background: (STATUS_TONE[o.status] ?? "#8A94A6") + "22", color: STATUS_TONE[o.status] ?? "#8A94A6" }}>{o.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function UnlockManager() {
+  const toast = useToast();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [locks, setLocks] = useState<LockEvent[]>([]);
+  const [files, setFiles] = useState<Record<string, UnlockFile>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = async () => {
+    const [ord, uf, lk] = await Promise.all([
+      supabase.from("orders").select("*").eq("kind", "lock").eq("status", "paid").order("created_at", { ascending: false }),
+      supabase.from("unlock_files").select("*"),
+      // Blocchi non ancora risolti segnalati dai dispositivi.
+      supabase.from("lock_events").select("*").eq("resolved", false).order("occurred_at", { ascending: false }),
+    ]);
+    setOrders((ord.data as Order[] | null) ?? []);
+    setLocks((lk.data as LockEvent[] | null) ?? []);
+    const map: Record<string, UnlockFile> = {};
+    for (const u of (uf.data as UnlockFile[] | null) ?? []) map[u.order_id] = u;
+    setFiles(map);
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  // Un ordine LOCK pagato per HWID (l'upload dell'unlock resta legato all'ordine pagato).
+  const paidOrderByHwid: Record<string, Order> = {};
+  for (const o of orders) if (o.hwid && !paidOrderByHwid[o.hwid]) paidOrderByHwid[o.hwid] = o;
+
+  // Righe unificate: ogni blocco non risolto è un dispositivo "da evadere"; se ha un ordine
+  // pagato corrispondente si può caricare l'unlock, altrimenti resta "in attesa di pagamento".
+  // Gli ordini pagati privi di un lock_event vengono comunque mostrati (retro-compatibilità).
+  const seenHwid = new Set<string>();
+  const rows = [
+    ...locks.map((l) => {
+      if (l.hwid) seenHwid.add(l.hwid);
+      return { key: `lk-${l.id}`, hwid: l.hwid, email: l.email ?? undefined, lockType: l.lock_type, when: l.occurred_at, order: l.hwid ? paidOrderByHwid[l.hwid] : undefined };
+    }),
+    ...orders.filter((o) => !o.hwid || !seenHwid.has(o.hwid)).map((o) => ({
+      key: `ord-${o.id}`, hwid: o.hwid ?? undefined, email: o.email, lockType: (o.lock_type ?? "perm") as "env" | "perm", when: o.created_at, order: o,
+    })),
+  ];
+
+  const upload = async (o: Order, file: File) => {
+    setBusy(o.id);
+    try {
+      const path = `${o.email}/${o.id}-${o.lock_type}.lks`;
+      const up = await supabase.storage.from("unlocks").upload(path, file, { upsert: true, contentType: "application/octet-stream" });
+      if (up.error) throw up.error;
+      const ins = await supabase.from("unlock_files").upsert({
+        order_id: o.id, email: o.email, hwid: o.hwid, lock_type: o.lock_type, storage_path: path, status: "ready",
+      }, { onConflict: "order_id" });
+      if (ins.error) throw ins.error;
+      toast.success("Unlock caricato.");
+      load();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Upload non riuscito."); }
+    finally { setBusy(null); }
+  };
+
+  const sendEmail = async (uf: UnlockFile) => {
+    setBusy(uf.order_id);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-unlock-email", { body: { unlockFileId: uf.id } });
+      if (error) throw new Error(error.message);
+      const res = data as { emailed?: boolean; signedUrl?: string };
+      if (res.emailed) toast.success("Email inviata all'utente.");
+      else { toast.info("Email non configurata: link copiato negli appunti."); if (res.signedUrl) navigator.clipboard?.writeText(res.signedUrl).catch(() => {}); }
+      load();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Invio non riuscito."); }
+    finally { setBusy(null); }
+  };
+
+  return (
+    <section className="rounded-xl border bg-card/60 p-6 shadow-card">
+      <h2 className="flex items-center gap-2 text-lg font-semibold"><KeyRound className="h-5 w-5 text-primary" /> Sblocchi LOCK da evadere</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Ogni dispositivo bloccato compare qui. Per gli sblocchi <strong>pagati</strong>: genera <code>unlock.lks</code> col Tool-CLI (usa l'HWID mostrato), caricalo e invialo all'utente — verrà scaricato e verificato in automatico all'apertura della DesktopApp. Il file non viene mai generato dal server.
+      </p>
+      <div className="mt-5 space-y-2">
+        {rows.length === 0 ? (
+          <p className="rounded-lg border bg-card/40 p-4 text-sm text-muted-foreground">Nessun blocco da evadere.</p>
+        ) : rows.map((r) => {
+          const order = r.order;
+          const uf = order ? files[order.id] : undefined;
+          const rowBusy = order ? busy === order.id : false;
+          return (
+            <div key={r.key} className="flex flex-wrap items-center gap-3 rounded-lg border bg-card/50 px-4 py-3 text-sm">
+              <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-semibold text-warning">{r.lockType === "perm" ? "PERMANENT" : "ENV"}</span>
+              <span className="max-w-[160px] truncate" title={r.email}>{r.email ?? "—"}</span>
+              <span className="font-mono text-xs text-muted-foreground" title="HWID del dispositivo">HWID: {r.hwid ?? "—"}</span>
+              <span className="text-xs text-muted-foreground" title="Momento del blocco">{new Date(r.when).toLocaleString()}</span>
+              <span className="ml-auto flex items-center gap-2">
+                {!order ? (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground" title="Nessun ordine di sblocco pagato per questo HWID">In attesa di pagamento</span>
+                ) : uf ? (
+                  <>
+                    <span className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success">{uf.status}</span>
+                    <Button variant="outline" size="sm" onClick={() => sendEmail(uf)} disabled={rowBusy}><Mail className="h-3.5 w-3.5" /> Invia email</Button>
+                  </>
+                ) : (
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input px-3 py-1.5 text-xs font-medium hover:bg-accent">
+                    <Upload className="h-3.5 w-3.5" /> {rowBusy ? "Carico…" : "Carica unlock.lks"}
+                    <input type="file" accept=".lks" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(order, f); }} />
+                  </label>
+                )}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }

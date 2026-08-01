@@ -13,7 +13,209 @@ Storico delle modifiche rilevanti del progetto, raggruppate per modulo:
 | **PATCH** | bugfix, allineamenti, rifiniture |
 
 Più interventi nella stessa sessione condividono la stessa versione, distinti per scope.
-Versione corrente: **4.5.0**.
+Versione corrente: **4.8.0**.
+
+---
+
+## [4.8.0] — 2026-07-12
+
+Inversione della semantica dei dati in sblocco/ripristino e tracciamento server-side
+del blocco al momento in cui scatta (task "Semantica dati lock/unlock + report Supabase").
+
+### `desktop` — sblocco che conserva i dati, ripristino master password distruttivo
+
+- **`unlock.lks` ora CONSERVA i dati** (ENV_LOCK e PERMANENT_LOCK). Il flusso di
+  `LockInfoFrame.handleUnlockFile` non azzera più il vault: dopo la verifica del file
+  (firma Ed25519 + hardware ID + scadenza + nonce, senza side-effect via il nuovo
+  `UnlockService.validate`), chiede la **master password attuale** e una **nuova** e
+  richiama `VaultService.rotatePassword` per ri-avvolgere la DEK invariata. Solo dopo una
+  rotazione riuscita l'unlock viene committato (`UnlockService.apply`: lock azzerato, nonce
+  consumato, `lock.lks` archiviato) e l'app riparte alla normale schermata di login.
+- **Ripristino ENV_LOCK con master password ora è DISTRUTTIVO.** `doRecover` verifica la
+  password (prova di proprietà), poi — previa conferma esplicita — azzera vault e dati
+  (`wipeAllData`) e richiede una nuova master password al riavvio. È la via gratuita; la via
+  che conserva i dati è l'`unlock.lks` a pagamento (coerenza con il modello di monetizzazione).
+- **`UnlockService.validate(Path)`**: nuova validazione senza side-effect (non consuma il
+  nonce, non azzera il lock), così la password di rotazione è richiesta prima del commit.
+- Nuovo dialog di rotazione (password attuale + nuova ×2, minimo 8 caratteri) con azzeramento
+  dei `char[]` in RAM. Aggiornate tutte le copy/dialoghi di `LockInfoFrame`.
+- Bump versione app a **4.8.0** (`pom.xml`, `AppVersion.FALLBACK`).
+
+### `desktop` — tracciamento Supabase del blocco al momento del lock
+
+- **`SignInFrame`**: al 10° tentativo (PERMANENT_LOCK) il blocco viene segnalato **subito**
+  a Supabase (`report_lock`), non più solo al riavvio successivo. Prima nessun record veniva
+  scritto se l'utente sbloccava/non riavviava.
+- **`LockReporter.report(...)`**: nuovo overload con `client_event_id` esplicito; usa il
+  `lockNonce` attivo come id stabile → l'evento a lock-time e quello all'avvio successivo
+  confluiscono in un unico record (idempotenza tra riavvii, dedup anche in coda locale).
+  `Main.java` allineato per usare lo stesso id stabile.
+
+### `desktop` — privacy dei log e rifiniture UI
+
+- **`LogSanitizer`** (nuovo): la console log del `ManagerFrame` censura i dati sensibili
+  (URL del database, chiavi `sb_*`, token Bearer, email, path assoluti, `hwid`, nonce)
+  mantenendo intatti il tipo di errore e il resto del messaggio. I file di log su disco
+  conservano il dettaglio completo per il debug. Applicato in `ManagerFrame.appendLog`.
+- **`LockInfoFrame`**: descrizioni di header e colonne accorciate e larghezze dei `div` HTML
+  ridotte (header 720→660, colonne 320→300) per evitare il testo tagliato a destra nel frame
+  statico 880×660.
+
+### `desktop` — coda blocchi protetta e auto-sblocco
+
+- **Coda blocchi anti-manomissione**: `lock_queue.json` è ora un envelope firmato HMAC-SHA256
+  con chiave legata all'HWID (`{events_b64, sig}`): una modifica manuale invalida la firma e la
+  coda viene ignorata. Quando tutti gli eventi sono accettati dal server il file viene
+  **cancellato** (niente code vuote residue). Il vecchio formato "array nudo" è migrato una tantum.
+- **Download automatico dell'unlock** (`DeviceUnlockFetcher`): all'apertura, se il dispositivo è
+  bloccato, la DesktopApp interroga l'Edge Function `device-unlock` (auth device: `hwid` +
+  `activation_token`); se l'autore ha già caricato l'`unlock.lks`, lo scarica da un link firmato,
+  lo **verifica** (`UnlockService.validate`) e lo pre-carica nel `LockInfoFrame` — l'utente deve
+  solo completare con master password attuale + nuova. Best-effort, non blocca l'avvio.
+
+### `webplatform` — evasione lock e auto-consegna
+
+- **`AccountingTab` → "Sblocchi LOCK da evadere"**: la vista ora elenca anche i blocchi non
+  risolti da `lock_events` (prima mostrava solo gli ordini LOCK pagati). Per ogni dispositivo
+  bloccato mostra HWID/email/tipo/data; l'upload dell'`unlock.lks` resta legato all'ordine pagato
+  corrispondente, mentre i blocchi senza ordine appaiono come "In attesa di pagamento".
+- **Edge Function `device-unlock`** (nuova, `--no-verify-jwt`): recapita al dispositivo legittimo
+  un link firmato all'unlock caricato dall'admin. Aggiunta a `functions:deploy` e alla guida.
+
+### `webplatform` / `docs`
+
+- **`supabase/functions/GUIDA_DEPLOY.md`**: l'elenco manuale (SQL Editor) delle migration
+  ora include 0017–0020; evidenziato che **senza 0019 + 0020** la RPC `report_lock` risponde
+  404 e i blocchi restano in `lock_queue.json` senza comparire in `lock_events`.
+
+### `webplatform` — copy allineata al nuovo modello
+
+- **`Sicurezza.tsx`**: ENV_LOCK ora descrive le due vie (master password gratuita ma
+  distruttiva / `unlock.lks` che conserva i dati con password attuale + nuova);
+  PERMANENT_LOCK evidenzia che l'`unlock.lks` conserva i dati. Aggiornata la lista dei flussi.
+- **`Faq.tsx`**: risposta PERMANENT_LOCK precisata (dati intatti, richiesta password attuale
+  + nuova). `Pricing.tsx`/`Checkout.tsx` già coerenti (lo sblocco pagato conserva i dati).
+
+---
+
+## [4.7.0] — 2026-07-11
+
+WebPlatform — miglioramento responsività mobile, fiducia percepita e SEO/condivisibilità
+(task "SEO WebPlatform").
+
+### `webplatform` — Fase 1: fix critici UX
+
+- **Menu mobile**: la `Navbar` collassa in un **menu hamburger** accessibile (toggle
+  `aria-expanded`, chiusura con `Esc`, pannello a comparsa) sotto il breakpoint `md`. Risolto
+  l'overlap tra logo e voci di menu su viewport mobile.
+- **Recensioni nascoste**: voce rimossa (commentata) dai menu e dal footer; la pagina
+  `/recensioni` mostra un **placeholder neutro** ("Presto le prime recensioni…") tramite flag
+  `SHOW_REVIEWS`. Nessun contenuto cancellato; rimossa dalla vista la recensione autoprodotta.
+- **Pricing**: copy rassicurante **prima** delle cifre ENV_LOCK/PERMANENT_LOCK (il vault e i dati
+  restano intatti, il blocco è anti-bruteforce) con richiamo a `/sicurezza#tipi-di-blocco`.
+
+### `webplatform` — Fase 2: SEO tecnico
+
+- Nuovo hook **`useSeo`** (`src/lib/seo.ts`): `title`, `meta description`, `canonical`, Open Graph
+  e Twitter Card **unici per pagina** (home, funzionalità, sicurezza, prezzi, recensioni, chi sono, FAQ).
+- Default OG/Twitter e **JSON-LD `SoftwareApplication`** (con i tre piani/offerte) in `index.html`.
+- **`robots.txt`** statico (pagine pubbliche indicizzabili, aree app/auth escluse) e **`sitemap.xml`** reali.
+
+### `webplatform` — Fase 3: contenuti
+
+- **Hero home** riscritto sul posizionamento "l'alternativa a 1Password + Google Drive che resta in
+  casa tua"; ridotto il gergo tecnico (PBKDF2/iterazioni spostati su Sicurezza).
+- Nuova pagina **FAQ** (`/faq`) con markup **JSON-LD `FAQPage`**: PC spento, accesso da fuori casa,
+  master password dimenticata, PERMANENT_LOCK, prezzi, crittografia.
+- Placeholder **prova sociale** commentato in home (TODO: numeri reali).
+- Segnalata l'incoerenza "codice aperto" senza repo GitHub pubblico (nessun link rotto aggiunto).
+
+### Note / TODO aperti
+
+- Immagine social dedicata **1200×630** (attuale fallback: `/icon-512.png`).
+- Numeri reali di prova sociale (utenti/download/stelle) da inserire.
+- Decisione su repository open source pubblico o riformulazione della dicitura "codice aperto".
+
+---
+
+## [4.6.1] — 2026-07-05
+
+Rifiniture e hardening di sicurezza dei blocchi (dai commenti sul task).
+
+### `webplatform`
+
+- **Pricing**: nuovo pulsante **"?"** che porta a `/sicurezza#tipi-di-blocco` (spiegazione ENV_LOCK /
+  PERMANENT_LOCK). Aggiunta l'ancora e lo scroll all'hash nella pagina Sicurezza.
+
+### `desktop` — frame di blocco più chiaro
+
+- `LockInfoFrame`: finestra ingrandita e testi non più troncati; **chiarito** che la **master
+  password ripristina senza perdere i dati**, mentre l'**unlock.lks dell'autore azzera tutto**.
+- Aggiunta una **conferma esplicita** prima del reset distruttivo con unlock.lks.
+
+### `desktop` / `db` — integrità estesa e tracciamento blocchi
+
+- **Firma di integrità estesa** (`EnvironmentStore`): oltre ai campi di lock ora copre anche
+  `planType`, `billingCycle`, `renewalEstimate`, `activationToken`, `activationEmail`. Modificarli a
+  mano → manomissione → blocco. Migrazione **re-firma silenziosa una-tantum** dei file pre-aggiornamento
+  (nessuno viene bloccato all'update). Il Tool-CLI non è impattato (lavora su `lock.lks`, non sulla firma).
+- **Tracciamento server-side dei blocchi** — migration `0019` (`lock_events` + RPC `report_lock`,
+  `active_lock_type`, `resolve_locks`). Nuovo `LockReporter` (DesktopApp): al blocco registra un evento
+  su Supabase; se **offline** lo **accoda** e lo **risincronizza** alla riconnessione (idempotente).
+  All'avvio, se il server ha un blocco attivo per l'HWID ma il file locale è stato ripristinato, l'app
+  si **ri-blocca**. Lo sblocco valido chiama `resolve_locks`.
+- **Fix `report_lock`** (`0020`): `occurred_at` passato come **text** e castato lato DB (PostgREST poteva
+  rifiutare la firma con parametro `timestamptz`). `LockReporter` ora **logga il corpo della risposta**
+  su errore, per diagnosticare rapidamente eventuali fallimenti di sincronizzazione.
+
+### Versioning
+
+- Allineamento a **4.6.1** su tutte le componenti.
+
+---
+
+## [4.6.0] — 2026-07-05
+
+Setup completo dei flussi di pagamento: abbonamenti **ricorrenti**, **rinnovo assistito**, acquisto
+**LOCK** dalla WebPlatform con consegna del file di sblocco, storico ordini lato admin e utente.
+
+### `db` — migration `0018`
+
+- `orders`: aggiunti `hwid` (sblocchi LOCK), `provider_subscription_id`, `is_recurring`.
+- `subscriptions`: `provider_subscription_id`, `auto_renew`, `cancel_at_period_end`.
+- Nuova tabella `unlock_files` + bucket storage privato **`unlocks`** (admin scrive, utente legge i
+  propri via signed URL). RPC `mark_unlock_downloaded`.
+
+### Edge Functions
+
+- **create-checkout**: HWID sugli ordini LOCK; abbonamento **ricorrente reale** via Stripe
+  `mode=subscription` (rinnovo/addebito automatico). Flag `recurring` dal client.
+- **stripe-webhook**: gestione ciclo di vita — `invoice.paid` (rinnovo → estende il periodo e
+  registra un ordine di rinnovo), `customer.subscription.deleted` (stop rinnovo).
+- **send-unlock-email** (nuova, solo admin): genera un link firmato al file di sblocco e lo invia
+  all'utente via **Resend** (fallback: ritorna il link se l'email non è configurata). Le Edge
+  Functions **non generano mai** l'unlock.lks: lo produce l'autore col Tool-CLI e lo carica.
+- PayPal ricorrente non nativo: coperto dal **rinnovo assistito**.
+
+### `webplatform`
+
+- **/admin/contabilita**: **storico ordini** (tutti) + **gestione sblocchi LOCK** (upload di
+  unlock.lks su storage con HWID, invio email all'utente).
+- **Dashboard utente**: sezione **"I miei ordini e pagamenti"** con download del file di sblocco;
+  card piano con **data di rinnovo** e pulsante **Rinnova ora**.
+- **Checkout**: campo HWID per gli sblocchi LOCK e toggle **rinnovo automatico** per gli abbonamenti.
+
+### `desktop`
+
+- **Rinnovo assistito**: alla scadenza (online, appena il server declassa; oppure offline in
+  scadenza) l'app propone di **pagare la nuova bolletta** aprendo la WebPlatform (`PlanRenewal` +
+  `PlanRenewalPrompt`, chiamati da `Main`).
+- **Schermata di blocco** (`LockInfoFrame`): nuovo pulsante **"Paga lo sblocco online"** che apre il
+  checkout della WebPlatform con l'HWID del dispositivo.
+
+### Versioning
+
+- Allineamento a **4.6.0** su tutte le componenti.
 
 ---
 
@@ -41,6 +243,21 @@ Versione corrente: **4.5.0**.
 - **Note**: junrar copre il formato RAR4 (RAR5/archivi cifrati → `ARCHIVE_INVALID`); il motore
   7z nativo viene inizializzato una sola volta (lazy, thread-safe).
 - Bump versione **4.4.3 → 4.5.0** (`pom.xml`, `AppVersion`, `package.json`).
+
+### `db` / `desktop` — abbonamento in environment.lks e scadenza con declassamento
+
+- **Migration `0017` (subscription expiry)**: le RPC `bind_activation` e `validate_license` ora
+  restituiscono il piano **effettivo** e i campi `billingCycle` (mensile/annuale) e `renewalEstimate`
+  (data rinnovo) letti da `public.subscriptions` — prima erano hardcoded a `null`, perciò
+  `environment.lks` non li aggiornava mai. Nuovo helper `effective_plan_info(email)`.
+- **Scadenza automatica**: se l'abbonamento è scaduto (`current_period_end < now`), l'utente viene
+  **declassato a Free** (`registrations.plan` → `free`, subscription → `expired`, idempotente); al
+  successivo avvio online l'app riceve `free` e blocca le funzionalità a pagamento.
+- **Blocco offline** (`PlanTier.ofEnvironment`): il Desktop calcola il tier **effettivo** anche
+  offline — se il piano è a pagamento ma `renewalEstimate` è passato (oltre 1 giorno di tolleranza),
+  degrada a Free. Usato da `PlanGateFilter`, `PlanService` e `SystemService`.
+- Nota: `billingCycle`/`renewalEstimate` si aggiornano in `environment.lks` al **prossimo avvio**
+  dell'app (unica chiamata a Supabase all'avvio).
 
 ---
 

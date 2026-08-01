@@ -12,6 +12,8 @@ interface Body {
   billingCycle?: "month" | "year";
   lockType?: "env" | "perm";
   provider?: "stripe" | "paypal";
+  hwid?: string;        // per gli sblocchi LOCK (dispositivo)
+  recurring?: boolean;  // abbonamento con rinnovo automatico
 }
 
 function siteUrl(req: Request): string {
@@ -59,6 +61,8 @@ Deno.serve(async (req) => {
       plan_code: body.kind === "subscription" ? body.planCode : null,
       billing_cycle: body.kind === "subscription" ? body.billingCycle : null,
       lock_type: body.kind === "lock" ? body.lockType : null,
+      hwid: body.kind === "lock" ? (body.hwid ?? null) : null,
+      is_recurring: body.kind === "subscription" ? !!body.recurring : false,
       base_cents: price.baseCents,
       discount_id: price.discountId,
       amount_cents: price.amountCents,
@@ -66,19 +70,21 @@ Deno.serve(async (req) => {
       status: "pending",
     }).select().single();
     if (oErr || !order) return json({ error: "order_create_failed", detail: oErr?.message }, 500);
+    console.log("[create-checkout] ordine creato", { id: order.id, provider, amount: price.amountCents, kind: body.kind });
 
     const site = siteUrl(req);
     const successUrl = `${site}/checkout/result?status=success&order=${order.id}`;
     const cancelUrl = `${site}/checkout/result?status=cancel&order=${order.id}`;
 
     // 4) Avvio pagamento in base al provider disponibile.
+    console.log("[create-checkout] provider richiesto:", provider, "| stripeKey:", !!Deno.env.get("STRIPE_SECRET_KEY"), "| paypal:", !!Deno.env.get("PAYPAL_CLIENT_ID"));
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     const paypalId = Deno.env.get("PAYPAL_CLIENT_ID");
     const paypalSecret = Deno.env.get("PAYPAL_SECRET");
 
+    const recurring = body.kind === "subscription" && !!body.recurring;
     if (provider === "stripe" && stripeKey) {
       const form = new URLSearchParams();
-      form.set("mode", "payment");
       form.set("success_url", successUrl);
       form.set("cancel_url", cancelUrl);
       form.set("client_reference_id", order.id);
@@ -87,6 +93,14 @@ Deno.serve(async (req) => {
       form.set("line_items[0][price_data][currency]", "eur");
       form.set("line_items[0][price_data][unit_amount]", String(price.amountCents));
       form.set("line_items[0][price_data][product_data][name]", price.label);
+      if (recurring) {
+        // Abbonamento ricorrente reale: Stripe rinnova e addebita in automatico.
+        form.set("mode", "subscription");
+        form.set("line_items[0][price_data][recurring][interval]", body.billingCycle === "year" ? "year" : "month");
+        form.set("subscription_data[metadata][order_id]", order.id);
+      } else {
+        form.set("mode", "payment");
+      }
       const r = await fetch("https://api.stripe.com/v1/checkout/sessions", {
         method: "POST",
         headers: { Authorization: `Bearer ${stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" },
@@ -130,6 +144,7 @@ Deno.serve(async (req) => {
     }
 
     // 5) Nessuna chiave provider: modalità SIMULATA (pagamento fittizio in-app).
+    console.log("[create-checkout] nessuna chiave provider → modalità SIMULATA per ordine", order.id);
     await admin.from("orders").update({ provider: "simulated" }).eq("id", order.id);
     return json({
       url: `${site}/checkout/simulate?order=${order.id}`,

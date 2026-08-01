@@ -25,6 +25,7 @@ import { ChiSono } from "./pages/ChiSono";
 import { Funzionalita } from "./pages/Funzionalita";
 import { Sicurezza } from "./pages/Sicurezza";
 import { Recensioni } from "./pages/Recensioni";
+import { Faq } from "./pages/Faq";
 import { Pricing } from "./pages/Pricing";
 import { Checkout } from "./pages/Checkout";
 import { CheckoutResult } from "./pages/CheckoutResult";
@@ -66,6 +67,7 @@ export default function App() {
       {/* Alias italiano per comodità */}
       <Route path="/prezzi" element={<Navigate to="/pricing" replace />} />
       <Route path="/recensioni" element={<Recensioni />} />
+      <Route path="/faq" element={<Faq />} />
       <Route path="/checkout/result" element={<CheckoutResult />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />

@@ -38,6 +38,7 @@ export interface Database {
           base_cents: number; discount_id: string | null; amount_cents: number;
           currency: string; provider: string; provider_ref: string | null;
           status: string; created_at: string; paid_at: string | null;
+          hwid: string | null; provider_subscription_id: string | null; is_recurring: boolean;
         };
         Insert: {
           id?: string; email: string; kind: string; plan_code?: string | null;
@@ -53,12 +54,40 @@ export interface Database {
         Row: {
           email: string; plan_code: string; billing_cycle: string; status: string;
           provider: string | null; current_period_end: string | null; updated_at: string;
+          provider_subscription_id: string | null; auto_renew: boolean; cancel_at_period_end: boolean;
         };
         Insert: {
           email: string; plan_code: string; billing_cycle: string; status?: string;
           provider?: string | null; current_period_end?: string | null; updated_at?: string;
         };
         Update: { plan_code?: string; billing_cycle?: string; status?: string; current_period_end?: string | null };
+        Relationships: [];
+      };
+      unlock_files: {
+        Row: {
+          id: string; order_id: string; email: string; hwid: string | null;
+          lock_type: string | null; storage_path: string; status: string; note: string | null;
+          created_at: string; emailed_at: string | null; downloaded_at: string | null;
+        };
+        Insert: {
+          id?: string; order_id: string; email: string; hwid?: string | null;
+          lock_type?: string | null; storage_path: string; status?: string; note?: string | null;
+        };
+        Update: { status?: string; note?: string | null; storage_path?: string };
+        Relationships: [];
+      };
+      lock_events: {
+        Row: {
+          id: string; hwid: string; email: string | null; lock_type: "env" | "perm";
+          app_version: string | null; client_event_id: string | null; occurred_at: string;
+          resolved: boolean; resolved_at: string | null; created_at: string;
+        };
+        Insert: {
+          id?: string; hwid: string; email?: string | null; lock_type: "env" | "perm";
+          app_version?: string | null; client_event_id?: string | null; occurred_at?: string;
+          resolved?: boolean; resolved_at?: string | null;
+        };
+        Update: { resolved?: boolean; resolved_at?: string | null };
         Relationships: [];
       };
       registrations: {
@@ -283,6 +312,11 @@ export interface Database {
       admin_orders_summary: {
         Args: Record<PropertyKey, never>;
         Returns: Json;
+      };
+      // v4.5.0 (0018): l'utente segna il proprio unlock come scaricato.
+      mark_unlock_downloaded: {
+        Args: { p_id: string };
+        Returns: undefined;
       };
     };
     Enums: Record<string, never>;

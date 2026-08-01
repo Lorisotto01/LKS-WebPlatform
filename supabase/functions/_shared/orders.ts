@@ -75,10 +75,14 @@ export async function computePrice(
  * Finalizza un ordine pagato (idempotente): marca paid, imposta il piano e
  * l'abbonamento per le subscription. I LOCK vengono solo registrati come pagati.
  */
-export async function finalizeOrder(admin: SupabaseClient, orderId: string): Promise<void> {
+export async function finalizeOrder(
+  admin: SupabaseClient,
+  orderId: string,
+  extra?: { providerSubscriptionId?: string | null },
+): Promise<void> {
   const { data: order } = await admin.from("orders").select("*").eq("id", orderId).maybeSingle();
-  if (!order) throw new Error("order_not_found");
-  if (order.status === "paid") return; // idempotente
+  if (!order) { console.log("[finalizeOrder] ordine non trovato:", orderId); throw new Error("order_not_found"); }
+  if (order.status === "paid") { console.log("[finalizeOrder] già pagato:", orderId); return; }
 
   await admin.from("orders").update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", orderId);
 
@@ -87,6 +91,7 @@ export async function finalizeOrder(admin: SupabaseClient, orderId: string): Pro
     if (order.billing_cycle === "year") end.setFullYear(end.getFullYear() + 1);
     else end.setMonth(end.getMonth() + 1);
 
+    const subId = extra?.providerSubscriptionId ?? order.provider_subscription_id ?? null;
     await admin.from("subscriptions").upsert({
       email: order.email,
       plan_code: order.plan_code,
@@ -94,11 +99,51 @@ export async function finalizeOrder(admin: SupabaseClient, orderId: string): Pro
       status: "active",
       provider: order.provider,
       current_period_end: end.toISOString(),
+      provider_subscription_id: subId,
+      auto_renew: !!order.is_recurring,
+      cancel_at_period_end: false,
       updated_at: new Date().toISOString(),
     });
     // registrations.plan resta la fonte di verità mirrorata alle app.
     await admin.from("registrations").update({ plan: order.plan_code }).eq("email", order.email);
+    if (subId && subId !== order.provider_subscription_id) {
+      await admin.from("orders").update({ provider_subscription_id: subId }).eq("id", orderId);
+    }
+    console.log("[finalizeOrder] piano aggiornato a", order.plan_code, "per", order.email, "| ricorrente:", !!order.is_recurring);
   }
   // kind === 'lock': registrato come pagato; l'emissione dell'unlock.lks è gestita
   // dal Tool-CLI dell'autore (fuori da questo flusso).
+}
+
+/**
+ * Rinnovo ricorrente (chiamato dal webhook su invoice.paid / capture ricorrente):
+ * estende il periodo dell'abbonamento e registra un ORDINE di rinnovo già pagato
+ * (per lo storico). Idempotenza best-effort sul provider_subscription_id.
+ */
+export async function recordRenewal(
+  admin: SupabaseClient,
+  providerSubscriptionId: string,
+  amountCents: number,
+): Promise<void> {
+  const { data: sub } = await admin.from("subscriptions")
+    .select("*").eq("provider_subscription_id", providerSubscriptionId).maybeSingle();
+  if (!sub) { console.log("[recordRenewal] subscription non trovata:", providerSubscriptionId); return; }
+
+  const base = sub.current_period_end && new Date(sub.current_period_end) > new Date()
+    ? new Date(sub.current_period_end) : new Date();
+  if (sub.billing_cycle === "year") base.setFullYear(base.getFullYear() + 1);
+  else base.setMonth(base.getMonth() + 1);
+
+  await admin.from("subscriptions").update({
+    status: "active", current_period_end: base.toISOString(), updated_at: new Date().toISOString(),
+  }).eq("email", sub.email);
+  await admin.from("registrations").update({ plan: sub.plan_code }).eq("email", sub.email);
+
+  await admin.from("orders").insert({
+    email: sub.email, kind: "subscription", plan_code: sub.plan_code, billing_cycle: sub.billing_cycle,
+    base_cents: amountCents ?? 0, amount_cents: amountCents ?? 0, provider: sub.provider ?? "stripe",
+    provider_subscription_id: providerSubscriptionId, is_recurring: true,
+    status: "paid", paid_at: new Date().toISOString(),
+  });
+  console.log("[recordRenewal] rinnovo registrato per", sub.email, "→", base.toISOString());
 }
