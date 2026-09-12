@@ -23,7 +23,7 @@
 // noi in anticipo e lo passiamo all'insert: è lo stesso uuid che i webhook
 // ritroveranno in metadata/custom_id.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, json } from "../_shared/cors.ts";
+import { cors } from "../_shared/cors.ts";
 import { adminClient, computePrice, type PlanCode } from "../_shared/orders.ts";
 
 interface Body {
@@ -61,6 +61,8 @@ function stripeMessage(payload: any): string {
 }
 
 Deno.serve(async (req) => {
+  // Header CORS decisi sull'Origin di questa richiesta (vedi _shared/cors.ts).
+  const { headers: corsHeaders, json } = cors(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 

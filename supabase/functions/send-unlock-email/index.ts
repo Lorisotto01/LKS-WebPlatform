@@ -4,12 +4,14 @@
 // all'utente (Resend). Le Edge Functions NON generano mai il file di sblocco:
 // lo produce l'autore col Tool-CLI e lo carica; questa function lo recapita.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, json } from "../_shared/cors.ts";
+import { cors } from "../_shared/cors.ts";
 import { adminClient } from "../_shared/orders.ts";
 
 const SIGNED_TTL = 60 * 60 * 24 * 7; // 7 giorni
 
 Deno.serve(async (req) => {
+  // Header CORS decisi sull'Origin di questa richiesta (vedi _shared/cors.ts).
+  const { headers: corsHeaders, json } = cors(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 

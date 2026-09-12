@@ -119,6 +119,41 @@ la palette e i token di tema restano quelli di prima, cambia solo la disposizion
 - **Responsive fino a 260px.** Entrambe le pagine, più la navbar (wordmark
   nascosto sotto 380px), non producono scroll orizzontale a 260px di viewport.
 
+### `webplatform` — CORS delle Edge Function: allow-list invece di origine singola
+
+Regressione introdotta dalla prima stesura del rilievo B5: le function
+rispondevano con un `Access-Control-Allow-Origin` **fisso**, l'origine di
+`PUBLIC_SITE_URL`. L'header ammette un solo valore (o `*`) e mai una lista,
+quindi dal browser funzionava solo la produzione: sviluppo su `localhost:5173`,
+dev in LAN (`http://192.168.1.x:5173`, quello documentato in `.env.example`) e
+deploy preview di Netlify si vedevano bloccare **ogni** chiamata a **tutte e
+sette** le function, che importano tutte `_shared/cors.ts`.
+
+- **Origine decisa per richiesta.** `_shared/cors.ts` espone ora `cors(req)`, che
+  legge l'header `Origin` e lo rimanda indietro tale e quale solo se compare
+  nella allow-list; a un'origine non ammessa risponde con quella di produzione,
+  così il browser rileva la discordanza e blocca. `Vary: Origin` era già al suo
+  posto e resta necessario.
+- **Allow-list**: origine di `PUBLIC_SITE_URL`; deploy preview e branch deploy
+  dello stesso sito Netlify (`https://*--<sito>.netlify.app`, che solo Netlify
+  può emettere per quel sito); le origini extra di `ALLOWED_ORIGINS` (nuova,
+  separata da virgole); `localhost`, `127.0.0.1` e le reti private (10/8,
+  172.16/12, 192.168/16) su qualsiasi porta. Senza nessuna delle due variabili si
+  ricade su `*`, così un ambiente appena creato parte senza configurazione.
+- **Nessuna modifica ai call site.** Il gestore destruttura
+  `const { headers: corsHeaders, json } = cors(req)`: i nomi ombreggiano quelli
+  di prima e tutte le `json(...)` esistenti restano valide. Gli export
+  `corsHeaders`/`json` a livello di modulo sono stati rimossi, così un punto
+  dimenticato non compila invece di ricadere in silenzio sull'origine sbagliata.
+- **`PUBLIC_SITE_URL` documentata come secret.** Non viene caricata da
+  `npm run functions:secrets` (che legge solo `supabase/functions/.env`): va
+  impostata con `supabase secrets set`. Era il motivo per cui, leggendo il repo,
+  non si capiva da dove arrivasse l'origine ammessa. Annotata in `.env.example` e
+  in `GUIDA_DEPLOY.md`.
+
+> Il fix richiede un `npm run functions:deploy`: finché le function non vengono
+> ridistribuite continuano a rispondere con l'origine fissa.
+
 ---
 
 ## [4.8.2] — 2026-09-12

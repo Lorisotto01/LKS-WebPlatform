@@ -10,7 +10,7 @@
 //   * timestamp fuori dalla tolleranza di 5 minuti -> 400 (anti-replay);
 //   * confronto della firma a tempo costante;
 //   * deduplica su event.id in public.webhook_events (migration 0007).
-import { corsHeaders, json } from "../_shared/cors.ts";
+import { cors } from "../_shared/cors.ts";
 import { adminClient, claimEvent, finalizeOrder, recordRenewal } from "../_shared/orders.ts";
 
 /** Tolleranza sul timestamp firmato da Stripe: oltre questa finestra l'evento è un replay. */
@@ -60,6 +60,8 @@ async function verifyStripeSignature(
 }
 
 Deno.serve(async (req) => {
+  // Header CORS decisi sull'Origin di questa richiesta (vedi _shared/cors.ts).
+  const { headers: corsHeaders, json } = cors(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 

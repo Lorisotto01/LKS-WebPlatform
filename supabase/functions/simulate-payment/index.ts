@@ -10,7 +10,7 @@
 // appena l'ambiente ha una qualsiasi chiave provider configurata: in produzione
 // risponde 403 e non finalizza nulla, indipendentemente dallo stato dell'ordine.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, json } from "../_shared/cors.ts";
+import { cors } from "../_shared/cors.ts";
 import { adminClient, finalizeOrder } from "../_shared/orders.ts";
 
 /** True quando l'ambiente ha almeno un provider di pagamento reale configurato. */
@@ -21,6 +21,8 @@ function realProviderConfigured(): boolean {
 }
 
 Deno.serve(async (req) => {
+  // Header CORS decisi sull'Origin di questa richiesta (vedi _shared/cors.ts).
+  const { headers: corsHeaders, json } = cors(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 

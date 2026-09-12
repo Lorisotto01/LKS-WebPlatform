@@ -6,12 +6,14 @@
 //
 // Le Edge Functions NON generano mai il file di sblocco: lo produce l'autore col Tool-CLI e lo
 // carica dalla tab Contabilità. Questa function si limita a recapitarlo al dispositivo legittimo.
-import { corsHeaders, json } from "../_shared/cors.ts";
+import { cors } from "../_shared/cors.ts";
 import { adminClient } from "../_shared/orders.ts";
 
 const SIGNED_TTL = 60 * 10; // 10 minuti: il device scarica subito dopo la richiesta.
 
 Deno.serve(async (req) => {
+  // Header CORS decisi sull'Origin di questa richiesta (vedi _shared/cors.ts).
+  const { headers: corsHeaders, json } = cors(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 

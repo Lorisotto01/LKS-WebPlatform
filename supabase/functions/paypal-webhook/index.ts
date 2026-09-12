@@ -8,7 +8,7 @@
 // /v1/notifications/verify-webhook-signature con PAYPAL_WEBHOOK_ID, ed è
 // rifiutato (401) se la verifica non va a buon fine o se la configurazione manca
 // (fail-closed). Gli eventi già processati sono deduplicati su id.
-import { corsHeaders, json } from "../_shared/cors.ts";
+import { cors } from "../_shared/cors.ts";
 import { adminClient, claimEvent, finalizeOrder } from "../_shared/orders.ts";
 
 /** Header che PayPal firma e che vanno rigirati tali e quali alla verifica. */
@@ -82,6 +82,8 @@ async function verifyWebhookSignature(
 }
 
 Deno.serve(async (req) => {
+  // Header CORS decisi sull'Origin di questa richiesta (vedi _shared/cors.ts).
+  const { headers: corsHeaders, json } = cors(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 

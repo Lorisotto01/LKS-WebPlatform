@@ -61,6 +61,15 @@ fine.
    ```bash
    npm run functions:secrets
    ```
+   > **`PUBLIC_SITE_URL` non passa da qui.** Il comando carica solo ciò che sta in
+   > `supabase/functions/.env`. `PUBLIC_SITE_URL` va impostata a parte e serve sia per i
+   > `success_url`/`cancel_url` del checkout sia, da v4.8.2, per l'origine ammessa dal CORS:
+   > ```bash
+   > supabase secrets set PUBLIC_SITE_URL=https://securelocalshare.netlify.app
+   > ```
+   > Se chiami le function anche da un dominio diverso da quello di produzione, elencalo in
+   > `ALLOWED_ORIGINS` (separato da virgole). Deploy preview Netlify, localhost e indirizzi di
+   > rete privata sono già ammessi senza configurazione — vedi `_shared/cors.ts`.
 3. Configura i webhook su Stripe/PayPal verso:
    - Stripe → `https://<PROJECT-REF>.functions.supabase.co/stripe-webhook`
      eventi: **checkout.session.completed**, **invoice.paid**, **customer.subscription.deleted**
