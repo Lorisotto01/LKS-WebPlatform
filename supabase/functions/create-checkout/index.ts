@@ -1,7 +1,18 @@
-// create-checkout (v4.8.1)
-// Crea un ordine e avvia il pagamento (Stripe/PayPal) oppure, se le chiavi del
-// provider non sono configurate, restituisce un link alla pagina di pagamento
-// SIMULATA in-app. Il prezzo è calcolato SEMPRE lato server.
+// create-checkout (v4.8.2)
+// Crea un ordine e avvia il pagamento (Stripe/PayPal) oppure, se NESSUNA chiave
+// provider è configurata nell'ambiente, restituisce un link alla pagina di
+// pagamento SIMULATA in-app. Il prezzo è calcolato SEMPRE lato server.
+//
+// SICUREZZA (rilievo C1, task 869f13awr) — il campo `provider` arriva dal client e
+// prima non era validato: un valore non riconosciuto (o un provider non
+// configurato) faceva cadere l'esecuzione nel ramo finale, creando un ordine
+// `provider: "simulated"` anche in produzione. Chiunque poteva poi finalizzarlo
+// gratis con simulate-payment. Adesso:
+//   * `provider` accetta solo "stripe" | "paypal" (whitelist stretta, 400 altrimenti);
+//   * se il provider richiesto non ha le chiavi configurate si risponde 400, senza
+//     mai ripiegare su un altro provider né sulla modalità simulata;
+//   * la modalità simulata è raggiungibile SOLO quando l'ambiente non ha alcuna
+//     chiave provider (sviluppo), mai in base a quanto inviato dal client.
 //
 // ORDINE DELLE OPERAZIONI — l'ordine su DB è l'ULTIMA cosa che scriviamo.
 // Prima si apre la sessione presso il provider, e solo se quella riesce si
@@ -24,6 +35,9 @@ interface Body {
   hwid?: string;        // per gli sblocchi LOCK (dispositivo)
   recurring?: boolean;  // abbonamento con rinnovo automatico
 }
+
+/** Provider di pagamento accettati dal client. Qualsiasi altro valore è un 400. */
+const ALLOWED_PROVIDERS = ["stripe", "paypal"] as const;
 
 /** Minuti di validità di un tentativo di pagamento (vedi orders.expires_at). */
 const TTL_MINUTES = 30;
@@ -75,12 +89,45 @@ Deno.serve(async (req) => {
       return json({ error: "invalid_lock_type", message: "Tipo di sblocco non valido." }, 400);
     }
 
+    // 2) Provider: whitelist stretta PRIMA di qualunque altra cosa (C1).
+    const requested = body.provider ?? "stripe";
+    if (!ALLOWED_PROVIDERS.includes(requested as typeof ALLOWED_PROVIDERS[number])) {
+      console.warn("[create-checkout] provider non ammesso dal client:", requested);
+      return json({ error: "invalid_provider", message: "Metodo di pagamento non valido." }, 400);
+    }
+
+    // Chiavi disponibili nell'AMBIENTE: sono queste — e solo queste — a decidere
+    // se un provider è utilizzabile e se la modalità simulata è ammessa.
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const paypalId = Deno.env.get("PAYPAL_CLIENT_ID");
+    const paypalSecret = Deno.env.get("PAYPAL_SECRET");
+    const hasStripe = !!stripeKey;
+    const hasPaypal = !!(paypalId && paypalSecret);
+    const simulationOnly = !hasStripe && !hasPaypal;
+
+    // Provider richiesto ma non configurato: errore esplicito. MAI un ripiego
+    // silenzioso su un altro provider o sulla modalità simulata.
+    if (!simulationOnly) {
+      if (requested === "stripe" && !hasStripe) {
+        return json({
+          error: "provider_unavailable",
+          message: "Pagamento con carta non disponibile: usa PayPal.",
+        }, 400);
+      }
+      if (requested === "paypal" && !hasPaypal) {
+        return json({
+          error: "provider_unavailable",
+          message: "Pagamento con PayPal non disponibile: usa la carta.",
+        }, 400);
+      }
+    }
+
     const admin = adminClient();
     // Piano attuale (serve per il prezzo dei LOCK).
     const { data: reg } = await admin.from("registrations").select("plan").eq("email", email).maybeSingle();
     const currentPlan = ((reg?.plan ?? "free").toLowerCase()) as PlanCode;
 
-    // 2) Prezzo server-side + sconto attivo.
+    // 3) Prezzo server-side + sconto attivo.
     let price;
     try {
       price = await computePrice(admin, {
@@ -101,9 +148,8 @@ Deno.serve(async (req) => {
       }, 400);
     }
 
-    // 3) Riferimenti dell'ordine: l'uuid è generato QUI ma scritto su DB solo al
-    //    punto 5, a sessione di pagamento ottenuta.
-    const provider = body.provider ?? "stripe";
+    // 4) Riferimenti dell'ordine: l'uuid è generato QUI ma scritto su DB solo
+    //    a sessione di pagamento ottenuta.
     const orderId = crypto.randomUUID();
     const site = siteUrl(req);
     const successUrl = `${site}/checkout/result?status=success&order=${orderId}`;
@@ -139,19 +185,17 @@ Deno.serve(async (req) => {
       return error;
     };
 
-    // 4) Avvio pagamento in base al provider disponibile.
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const paypalId = Deno.env.get("PAYPAL_CLIENT_ID");
-    const paypalSecret = Deno.env.get("PAYPAL_SECRET");
-    console.log("[create-checkout] provider richiesto:", provider, "| stripeKey:", !!stripeKey, "| paypal:", !!(paypalId && paypalSecret));
+    console.log("[create-checkout] provider richiesto:", requested,
+      "| stripe:", hasStripe, "| paypal:", hasPaypal, "| simulazione:", simulationOnly);
 
     const recurring = body.kind === "subscription" && !!body.recurring;
 
-    if (provider === "stripe" && stripeKey) {
+    // 5) Avvio pagamento presso il provider configurato.
+    if (!simulationOnly && requested === "stripe") {
       // Guardia di configurazione: una chiave pubblicabile qui produrrebbe un 403
       // `secret_key_required` dopo il giro di rete. Meglio dirlo subito e chiaro.
-      if (!/^(sk|rk)_/.test(stripeKey.trim())) {
-        console.error("[create-checkout] STRIPE_SECRET_KEY non è una chiave segreta (prefisso:", stripeKey.slice(0, 3), ")");
+      if (!/^(sk|rk)_/.test(stripeKey!.trim())) {
+        console.error("[create-checkout] STRIPE_SECRET_KEY non è una chiave segreta (prefisso:", stripeKey!.slice(0, 3), ")");
         return json({
           error: "stripe_config",
           message: "Configurazione Stripe non valida: STRIPE_SECRET_KEY deve contenere la chiave SEGRETA (sk_… o rk_…), non quella pubblicabile.",
@@ -197,9 +241,10 @@ Deno.serve(async (req) => {
       });
       const session = await r.json();
       if (!r.ok) {
-        // Nessun record scritto: il tentativo non è mai partito.
+        // Nessun record scritto: il tentativo non è mai partito. Il dettaglio
+        // tecnico resta nei log della function, non torna al client (M10).
         console.error("[create-checkout] Stripe ha rifiutato:", r.status, JSON.stringify(session?.error ?? session));
-        return json({ error: "stripe_error", message: stripeMessage(session), detail: session }, 502);
+        return json({ error: "stripe_error", message: stripeMessage(session) }, 502);
       }
       if (!recurring) expiresAt = new Date(stripeExpiresSec * 1000);
 
@@ -211,13 +256,13 @@ Deno.serve(async (req) => {
           method: "POST",
           headers: { Authorization: `Bearer ${stripeKey}` },
         }).catch(() => {});
-        return json({ error: "order_create_failed", message: "Ordine non registrato, riprova.", detail: oErr.message }, 500);
+        return json({ error: "order_create_failed", message: "Ordine non registrato, riprova." }, 500);
       }
       console.log("[create-checkout] ordine creato", { id: orderId, provider: "stripe", amount: price.amountCents, kind: body.kind });
       return json({ url: session.url, provider: "stripe", orderId, expiresAt: expiresAt.toISOString() });
     }
 
-    if (provider === "paypal" && paypalId && paypalSecret) {
+    if (!simulationOnly && requested === "paypal") {
       const base = Deno.env.get("PAYPAL_API_BASE") || "https://api-m.sandbox.paypal.com";
       const tokenRes = await fetch(`${base}/v1/oauth2/token`, {
         method: "POST",
@@ -233,7 +278,6 @@ Deno.serve(async (req) => {
         return json({
           error: "paypal_auth_error",
           message: "Configurazione PayPal non valida: controlla PAYPAL_CLIENT_ID / PAYPAL_SECRET.",
-          detail: tokenBody,
         }, 502);
       }
       const orderRes = await fetch(`${base}/v2/checkout/orders`, {
@@ -255,25 +299,25 @@ Deno.serve(async (req) => {
         return json({
           error: "paypal_error",
           message: pp?.details?.[0]?.description || pp?.message || "PayPal ha rifiutato la creazione dell'ordine.",
-          detail: pp,
         }, 502);
       }
       const approve = (pp.links ?? []).find((l: any) => l.rel === "approve")?.href;
       if (!approve) {
         console.error("[create-checkout] PayPal non ha restituito il link di approvazione:", JSON.stringify(pp));
-        return json({ error: "paypal_error", message: "PayPal non ha restituito il link di pagamento.", detail: pp }, 502);
+        return json({ error: "paypal_error", message: "PayPal non ha restituito il link di pagamento." }, 502);
       }
 
       const oErr = await saveOrder({ provider: "paypal", provider_ref: pp.id ?? null });
-      if (oErr) return json({ error: "order_create_failed", message: "Ordine non registrato, riprova.", detail: oErr.message }, 500);
+      if (oErr) return json({ error: "order_create_failed", message: "Ordine non registrato, riprova." }, 500);
       console.log("[create-checkout] ordine creato", { id: orderId, provider: "paypal", amount: price.amountCents, kind: body.kind });
       return json({ url: approve, provider: "paypal", orderId, expiresAt: expiresAt.toISOString() });
     }
 
-    // 5) Nessuna chiave provider: modalità SIMULATA (pagamento fittizio in-app).
+    // 6) Nessuna chiave provider nell'ambiente → modalità SIMULATA (solo sviluppo).
+    //    Si arriva qui esclusivamente con simulationOnly === true.
     console.log("[create-checkout] nessuna chiave provider → modalità SIMULATA per ordine", orderId);
     const oErr = await saveOrder({ provider: "simulated", provider_ref: null });
-    if (oErr) return json({ error: "order_create_failed", message: "Ordine non registrato, riprova.", detail: oErr.message }, 500);
+    if (oErr) return json({ error: "order_create_failed", message: "Ordine non registrato, riprova." }, 500);
     return json({
       url: `${site}/checkout/simulate?order=${orderId}`,
       provider: "simulated",
@@ -282,7 +326,8 @@ Deno.serve(async (req) => {
       expiresAt: expiresAt.toISOString(),
     });
   } catch (e) {
+    // Il dettaglio dell'eccezione resta nei log, non viene rimandato al client (M10).
     console.error("[create-checkout] eccezione non gestita:", e);
-    return json({ error: "unexpected", message: "Avvio pagamento non riuscito.", detail: String(e) }, 500);
+    return json({ error: "unexpected", message: "Avvio pagamento non riuscito." }, 500);
   }
 });

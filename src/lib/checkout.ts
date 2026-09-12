@@ -78,3 +78,19 @@ export function effectiveOrderStatus(order: { status: string; expires_at?: strin
   if (order.status === "pending" && order.expires_at && new Date(order.expires_at) < new Date()) return "failed";
   return order.status as OrderStatus;
 }
+
+/**
+ * Chiede il link firmato per scaricare una release (v4.8.2).
+ *
+ * Il bucket delle release non è più leggibile dai client: la firma la produce la Edge Function
+ * `release-download` con la service_role, dopo aver identificato l'utente dal JWT di sessione.
+ * La function registra da sé il download in `downloads` e aggiorna `last_download_at`, quindi
+ * l'audit non dipende più da ciò che fa il browser (task 869f13awr, rilievo M6).
+ */
+export async function releaseDownloadUrl(version: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke<{ url?: string }>(
+    "release-download", { body: { version } });
+  if (error) throw new Error(await functionErrorMessage(error, "Download non riuscito."));
+  if (!data?.url) throw new Error("Link di download non disponibile.");
+  return data.url;
+}

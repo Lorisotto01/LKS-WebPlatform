@@ -13,11 +13,28 @@ Storico delle modifiche rilevanti del progetto, raggruppate per modulo:
 | **PATCH** | bugfix, allineamenti, rifiniture |
 
 Più interventi nella stessa sessione condividono la stessa versione, distinti per scope.
-Versione corrente: **4.8.0**.
+Versione corrente: **4.8.2**.
 
 ---
 
 ## [Non rilasciato]
+
+### `desktop` — cartella runtime spostata in `%ProgramData%\SecureLocalShare`
+
+- **Nuova root dei dati**: l'albero runtime non vive più in `%USERPROFILE%\Password_Saver_v3`
+  ma in `%ProgramData%\SecureLocalShare` (`RuntimePaths.ROOT_DIR_NAME` + il nuovo
+  `RuntimePaths.defaultBase()`, che legge la variabile `ProgramData` e ricade sulla home
+  utente dove non è definita). I dati diventano così condivisi a livello di macchina invece
+  di essere legati a un singolo profilo Windows.
+- **Migrazione automatica al primo avvio**: `RuntimePaths.resolveForStartup` sposta un albero
+  `Password_Saver_v3` preesistente nella nuova posizione e ne registra il percorso nel pointer
+  file. La migrazione parte solo se la nuova root non esiste ancora, così non sovrascrive mai
+  dati vivi; se lo spostamento fallisce (volume diverso, file bloccato, permessi mancanti) la
+  cartella legacy resta al suo posto e viene usata così com'è, senza perdita di dati.
+- `resolveOrCreate` resta ermetico (nessuna migrazione, nessun pointer): i test con `@TempDir`
+  restano isolati.
+- Il wizard continua a permettere la scelta della cartella e propone la nuova root come
+  default; il percorso scelto (pointer `~/.securelocalshare_root`) ha sempre la precedenza.
 
 ### `webplatform` — ciclo di vita degli ordini: TTL, annullamento e checkout atomico
 
@@ -72,22 +89,127 @@ checkout fallito lasciava un ordine fantasma, un checkout abbandonato restava
   giornaliero, non più con `expire_stale_orders_5min` che gira ogni cinque
   minuti. Vengono rimossi per nome, lasciando intatti eventuali job manuali.
 
-### `desktop` — cartella runtime spostata in `%ProgramData%\SecureLocalShare`
+### `webplatform` — dashboard e changelog riprogettati
 
-- **Nuova root dei dati**: l'albero runtime non vive più in `%USERPROFILE%\Password_Saver_v3`
-  ma in `%ProgramData%\SecureLocalShare` (`RuntimePaths.ROOT_DIR_NAME` + il nuovo
-  `RuntimePaths.defaultBase()`, che legge la variabile `ProgramData` e ricade sulla home
-  utente dove non è definita). I dati diventano così condivisi a livello di macchina invece
-  di essere legati a un singolo profilo Windows.
-- **Migrazione automatica al primo avvio**: `RuntimePaths.resolveForStartup` sposta un albero
-  `Password_Saver_v3` preesistente nella nuova posizione e ne registra il percorso nel pointer
-  file. La migrazione parte solo se la nuova root non esiste ancora, così non sovrascrive mai
-  dati vivi; se lo spostamento fallisce (volume diverso, file bloccato, permessi mancanti) la
-  cartella legacy resta al suo posto e viene usata così com'è, senza perdita di dati.
-- `resolveOrCreate` resta ermetico (nessuna migrazione, nessun pointer): i test con `@TempDir`
-  restano isolati.
-- Il wizard continua a permettere la scelta della cartella e propone la nuova root come
-  default; il percorso scelto (pointer `~/.securelocalshare_root`) ha sempre la precedenza.
+Task "Refactor UI dashboard WebPlatform". Layout rifatto su entrambe le pagine;
+la palette e i token di tema restano quelli di prima, cambia solo la disposizione.
+
+- **Dashboard a fasce a tutta larghezza** al posto delle due colonne asimmetriche:
+  benvenuto, *Versioni disponibili*, *Piano attuale*, *Ordini · Dati account* e
+  *Versioni scaricate e recensioni*. Il piano compare una volta sola: la fascia
+  dedicata assorbe la vecchia card "Il tuo piano" e l'upsell.
+- **Elenchi scorrevoli.** Versioni precedenti, ordini e storico download hanno
+  altezza massima e scroll interno: con molti record la pagina non si allunga
+  all'infinito. La linea temporale verticale delle release resta, spostata
+  accanto alla card dell'ultima versione.
+- **Note di rilascio fuori dalla dashboard.** Il riquadro con il testo integrale
+  sparisce: ogni versione porta un collegamento `Note di rilascio` che apre
+  `/changelog` sull'ancora della versione (`#v4-8-2`), più un link *Tutte le note*
+  nell'intestazione della sezione.
+- **Attivazione dispositivo e recensione ricollocate.** L'attivazione affianca i
+  dati account, il form di recensione entra nella fascia dei download.
+- **Changelog leggibile.** Nuovo `src/lib/changelog.ts`: il markdown viene
+  destrutturato in versioni → applicativi → voci. La pagina aggiunge un indice
+  laterale sticky (a comparsa sotto `lg`), filtri per applicativo, ricerca
+  testuale e versioni collassabili. Gli scope tecnici (`desktop`, `db`,
+  `tool-cli`, …) diventano nomi leggibili — *App desktop*, *Interfaccia da
+  browser*, *Sito e area personale*, *Servizi e archivio dati*, *Strumenti
+  interni*, *Documentazione*, *Note generali*. Il testo di `CHANGELOG.md` non
+  viene toccato: resta la fonte tecnica di verità.
+- **Responsive fino a 260px.** Entrambe le pagine, più la navbar (wordmark
+  nascosto sotto 380px), non producono scroll orizzontale a 260px di viewport.
+
+---
+
+## [4.8.2] — 2026-09-12
+
+Aggiornamento dedicato alla sicurezza. Nessuna funzionalità viene rimossa: alcune richiedono
+un passaggio in più la prima volta, descritto qui sotto.
+
+### `desktop` — collegamento cifrato con telefoni e tablet (HTTPS)
+
+- L'indirizzo da aprire sui dispositivi della rete diventa **`https://…`**. Da questo
+  aggiornamento accesso, documenti e password condivise viaggiano cifrati anche all'interno
+  della rete locale, e non più in chiaro.
+- **Cosa succede la prima volta**: il browser mostra un avviso di sicurezza. È previsto — il
+  certificato è generato dal tuo computer e non da un ente di certificazione esterno, che per
+  un indirizzo di rete privata non potrebbe emetterlo. Basta scegliere di proseguire una volta
+  per dispositivo (su Chrome e Edge: *Avanzate → Procedi*).
+- Se avevi salvato un segnalibro che inizia con `http://`, riaprilo dall'indirizzo mostrato nel
+  pannello dell'applicazione: il vecchio collegamento non risponde più.
+
+### `desktop` — codice di registrazione per i nuovi account
+
+- Per creare un account dalla WebApp serve ora il **codice di registrazione** di 6 caratteri
+  che compare nel pannello dell'applicazione, accanto all'indirizzo IP. Comunicalo solo alle
+  persone che vuoi abilitare: chi non lo ha non può registrarsi, anche se è collegato alla
+  stessa rete.
+- Il codice cambia a ogni avvio dell'applicazione.
+- Gli account già esistenti continuano ad accedere normalmente, senza codice.
+
+### `desktop` — password degli account più robuste
+
+- Le password scelte d'ora in poi (registrazione e cambio password) devono avere almeno
+  **10 caratteri**, con una maiuscola, una minuscola, un numero e un simbolo. Gli account già
+  creati continuano a funzionare con la password attuale.
+- Dopo alcuni tentativi di accesso errati ravvicinati, l'accesso viene sospeso per qualche
+  minuto e poi si riabilita da solo.
+
+### `desktop` — apertura di archivi e compressione
+
+- La decompressione dei file **.7z** è ora interamente in Java: è stato rimosso un componente
+  nativo non più aggiornato dal 2016. I formati supportati restano ZIP, RAR e 7z.
+- **Archivi grandi senza limiti di memoria**: l'apertura di un archivio non lo carica più
+  interamente in memoria. Anche un archivio da diversi GB viene ora elaborato un pezzo per volta,
+  quindi non fa più esaurire la memoria del computer.
+- Un archivio anomalo (che una volta aperto occuperebbe uno spazio spropositato) viene
+  interrotto con un messaggio chiaro, invece di saturare memoria e disco del computer.
+- Prima di essere passati agli strumenti di compressione, i file vengono verificati per
+  accertare che il contenuto corrisponda davvero al tipo dichiarato.
+
+### `desktop` — log e dati di configurazione
+
+- I file di log non contengono più dati sensibili (token di sessione, identificativi del
+  dispositivo, codici monouso): finora erano oscurati solo nella console a schermo. Allegare i
+  log a una segnalazione è quindi più sicuro.
+- Rafforzata la protezione del file di configurazione contro le modifiche manuali: il contatore
+  dei tentativi di accesso e lo stato di blocco non sono più alterabili modificando il file.
+
+### `desktop` — download degli aggiornamenti
+
+- Il download di una nuova versione passa ora da un link temporaneo rilasciato dal server solo
+  al dispositivo che lo richiede, con la licenza attiva. I file di installazione non sono più
+  raggiungibili direttamente.
+- L'aggiornamento automatico richiede quindi che il dispositivo sia stato attivato; da un
+  dispositivo non attivato si scarica la nuova versione dal sito, come al primo acquisto.
+
+### `webapp` — allineamento automatico e notifiche
+
+- La WebApp servita ai dispositivi viene **ri-distribuita automaticamente** a ogni aggiornamento
+  dell'applicazione: prima poteva restare indietro rispetto al programma sul computer.
+- Le notifiche in tempo reale usano ora un'autorizzazione temporanea dedicata al posto della
+  sessione completa.
+
+### `webplatform` — acquisti, licenze e segnalazioni
+
+- Rafforzati i controlli sul flusso di acquisto e sulle notifiche ricevute dai sistemi di
+  pagamento, con protezione contro le notifiche duplicate.
+- Irrobustita la gestione di licenze, dispositivi collegati e segnalazioni di assistenza: ogni
+  operazione è ora legata in modo verificabile al dispositivo e all'account che la richiede.
+- I file di installazione si scaricano solo dall'area riservata, con un link temporaneo generato
+  al momento: ogni download resta tracciato nello storico del tuo account.
+
+### Sicurezza di contorno
+
+- Aggiunte le intestazioni di sicurezza standard alle pagine servite in rete locale, per
+  impedire che l'interfaccia venga incorniciata o interpretata male da un altro sito.
+- Aggiornata la libreria di gestione delle sessioni a una versione mantenuta.
+
+### Nota per chi aggiorna
+
+Dopo l'aggiornamento riapri la WebApp dall'indirizzo indicato nel pannello dell'applicazione
+(ora in `https://`) e, se devi aggiungere un nuovo utente, tieni a portata di mano il codice di
+registrazione mostrato nello stesso pannello.
 
 ---
 

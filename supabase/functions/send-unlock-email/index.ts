@@ -34,7 +34,11 @@ Deno.serve(async (req) => {
     // Link firmato al file.
     const { data: signed, error: sErr } = await admin.storage
       .from("unlocks").createSignedUrl(uf.storage_path, SIGNED_TTL);
-    if (sErr || !signed) return json({ error: "sign_failed", detail: sErr?.message }, 500);
+    if (sErr || !signed) {
+      // Il dettaglio tecnico resta nei log della function, non torna al client (M10).
+      console.error("[send-unlock-email] firma URL non riuscita:", sErr?.message);
+      return json({ error: "sign_failed" }, 500);
+    }
     const site = Deno.env.get("PUBLIC_SITE_URL") || "";
 
     // Invio email (Resend). Se manca la chiave, ritorna il link così l'admin lo inoltra a mano.
@@ -67,6 +71,7 @@ Deno.serve(async (req) => {
 
     return json({ ok: true, emailed, signedUrl: signed.signedUrl });
   } catch (e) {
-    return json({ error: "unexpected", detail: String(e) }, 500);
+    console.error("[send-unlock-email] eccezione non gestita:", e);
+    return json({ error: "unexpected" }, 500);
   }
 });

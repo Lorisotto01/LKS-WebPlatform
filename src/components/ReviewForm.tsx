@@ -43,12 +43,12 @@ export function ReviewForm({ versions, defaultVersion }: { versions: string[]; d
 
   if (done) {
     return (
-      <section className="rounded-xl border border-success/30 bg-success/5 p-6 shadow-card">
+      <section className="rounded-lg border border-success/30 bg-success/5 p-3 sm:p-4">
         <div className="flex items-center gap-2 text-success">
-          <CheckCircle2 className="h-5 w-5" />
-          <h2 className="text-lg font-semibold">Recensione inviata</h2>
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <h2 className="text-sm font-semibold sm:text-base">Recensione inviata</h2>
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 break-words text-xs text-muted-foreground sm:text-sm">
           La trovi nella vetrina pubblica delle recensioni, raggruppata per versione.
         </p>
         <Button variant="outline" size="sm" className="mt-4" onClick={() => { setDone(false); setTitolo(""); setRating(0); setDescrizione(""); }}>
@@ -59,11 +59,12 @@ export function ReviewForm({ versions, defaultVersion }: { versions: string[]; d
   }
 
   return (
-    <section className="rounded-xl border bg-card/60 p-6 shadow-card">
-      <h2 className="flex items-center gap-2 text-lg font-semibold">
-        <Star className="h-5 w-5 text-warning" /> Lascia una recensione
+    <section className="rounded-lg border bg-background/40 p-3 sm:p-4">
+      <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold sm:text-base">
+        <Star className="h-4 w-4 shrink-0 text-warning" />
+        <span className="min-w-0 break-words">Lascia una recensione</span>
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">Racconta com'è andata con una versione: il tuo voto comparirà tra le recensioni pubbliche.</p>
+      <p className="mt-1 break-words text-xs text-muted-foreground sm:text-sm">Racconta com'è andata con una versione: il tuo voto comparirà tra le recensioni pubbliche.</p>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
@@ -90,8 +91,8 @@ export function ReviewForm({ versions, defaultVersion }: { versions: string[]; d
 
       <div className="mt-4 flex flex-col gap-1.5">
         <Label>Valutazione</Label>
-        <div className="flex items-center gap-3">
-          <StarRating value={rating} onChange={setRating} size={28} />
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <StarRating value={rating} onChange={setRating} size={26} />
           <span className="text-sm text-muted-foreground">{rating > 0 ? `${rating}/5` : "Seleziona"}</span>
         </div>
       </div>
@@ -107,7 +108,7 @@ export function ReviewForm({ versions, defaultVersion }: { versions: string[]; d
         />
       </div>
 
-      <Button onClick={submit} disabled={busy} className="mt-5 bg-brand-gradient shadow-glow hover:opacity-90">
+      <Button onClick={submit} disabled={busy} className="mt-5 w-full bg-brand-gradient shadow-glow hover:opacity-90 sm:w-auto">
         <Send className="h-4 w-4" /> {busy ? "Invio…" : "Invia recensione"}
       </Button>
     </section>

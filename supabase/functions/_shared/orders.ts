@@ -147,3 +147,39 @@ export async function recordRenewal(
   });
   console.log("[recordRenewal] rinnovo registrato per", sub.email, "→", base.toISOString());
 }
+
+/**
+ * Idempotenza dei webhook (rilievo A7, task 869f13awr). Registra l'id evento del
+ * provider in `public.webhook_events` (chiave primaria provider+event_id) e
+ * ritorna true SOLO la prima volta. Un evento ricevuto due volte — ritentativo
+ * legittimo del provider o replay di una richiesta catturata — ritorna false e
+ * va ignorato dal chiamante.
+ *
+ * Serve soprattutto a `recordRenewal`, che NON è idempotente: senza questa
+ * guardia ogni replay di `invoice.paid` estendeva l'abbonamento di un altro
+ * mese/anno. Se l'id evento manca la chiamata ritorna true (nessuna deduplica
+ * possibile): la verifica della firma resta l'unica difesa in quel caso.
+ */
+export async function claimEvent(
+  admin: SupabaseClient,
+  provider: "stripe" | "paypal",
+  eventId: string | null | undefined,
+  eventType?: string | null,
+): Promise<boolean> {
+  if (!eventId) return true;
+  const { error } = await admin.from("webhook_events").insert({
+    provider,
+    event_id: eventId,
+    event_type: eventType ?? null,
+  });
+  if (!error) return true;
+  // 23505 = unique_violation → evento già processato.
+  if ((error as any).code === "23505") {
+    console.log(`[claimEvent] evento ${provider}/${eventId} già processato: ignorato.`);
+    return false;
+  }
+  // Errore diverso (es. tabella assente perché la migration 0007 non è stata
+  // applicata): non blocchiamo il pagamento, ma lo segnaliamo nei log.
+  console.error("[claimEvent] deduplica non disponibile:", error.message);
+  return true;
+}

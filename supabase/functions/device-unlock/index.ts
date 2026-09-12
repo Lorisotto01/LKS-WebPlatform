@@ -47,7 +47,11 @@ Deno.serve(async (req) => {
     const { data: signed, error: sErr } = await admin.storage
       .from("unlocks")
       .createSignedUrl(uf.storage_path, SIGNED_TTL);
-    if (sErr || !signed) return json({ error: "sign_failed", detail: sErr?.message }, 500);
+    if (sErr || !signed) {
+      // Il dettaglio tecnico resta nei log della function, non torna al client (M10).
+      console.error("[device-unlock] firma URL non riuscita:", sErr?.message);
+      return json({ error: "sign_failed" }, 500);
+    }
 
     // 4) Segna 'downloaded' (best-effort: non blocca la consegna).
     await admin
@@ -57,6 +61,7 @@ Deno.serve(async (req) => {
 
     return json({ available: true, url: signed.signedUrl, id: uf.id, lock_type: uf.lock_type });
   } catch (e) {
-    return json({ error: "server_error", detail: e instanceof Error ? e.message : String(e) }, 500);
+    console.error("[device-unlock] eccezione non gestita:", e);
+    return json({ error: "server_error" }, 500);
   }
 });

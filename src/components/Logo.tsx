@@ -87,6 +87,11 @@ interface LogoProps {
   size?: "sm" | "md" | "lg";
   /** Hide the "SecureLocalShare" text and show the mark only. */
   markOnly?: boolean;
+  /**
+   * Nasconde il wordmark sotto i 380px di viewport, lasciando il solo marchio.
+   * Serve alle barre dense (navbar) per restare leggibili fino a 260px.
+   */
+  compact?: boolean;
   className?: string;
 }
 
@@ -96,13 +101,19 @@ const SIZES = {
   lg: { mark: "h-10 w-10", text: "text-lg" },
 } as const;
 
-export function Logo({ size = "md", markOnly = false, className }: LogoProps) {
+export function Logo({ size = "md", markOnly = false, compact = false, className }: LogoProps) {
   const s = SIZES[size];
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
-      <LogoMark className={cn(s.mark, "drop-shadow-[0_2px_8px_hsl(248_90%_60%/0.35)]")} />
+      <LogoMark className={cn(s.mark, "shrink-0 drop-shadow-[0_2px_8px_hsl(248_90%_60%/0.35)]")} />
       {!markOnly && (
-        <span className={cn("font-semibold tracking-tight text-foreground", s.text)}>
+        <span
+          className={cn(
+            "font-semibold tracking-tight text-foreground",
+            s.text,
+            compact && "hidden min-[380px]:inline"
+          )}
+        >
           SecureLocalShare
         </span>
       )}

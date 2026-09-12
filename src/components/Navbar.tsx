@@ -47,9 +47,9 @@ export function Navbar({ links = [] }: { links?: NavLink[] }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-lg">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link to="/" className="transition-opacity hover:opacity-80">
-          <Logo size="md" />
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-3 sm:px-6">
+        <Link to="/" className="min-w-0 shrink-0 transition-opacity hover:opacity-80">
+          <Logo size="md" compact />
         </Link>
 
         {/* Nav desktop */}
@@ -59,7 +59,7 @@ export function Navbar({ links = [] }: { links?: NavLink[] }) {
           </nav>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           {user ? (
             <>
               <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
@@ -115,7 +115,7 @@ export function Navbar({ links = [] }: { links?: NavLink[] }) {
           id="mobile-nav"
           className="border-t border-border/60 bg-background/95 backdrop-blur-lg md:hidden"
         >
-          <div className="mx-auto flex max-w-6xl flex-col gap-1 px-6 py-4">
+          <div className="mx-auto flex max-w-6xl flex-col gap-1 px-3 py-4 sm:px-6">
             {links.map((l) =>
               l.href.startsWith("/") ? (
                 <Link

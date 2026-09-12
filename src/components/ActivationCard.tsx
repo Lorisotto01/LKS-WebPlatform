@@ -68,10 +68,11 @@ export function ActivationCard() {
   const headStatus = state.isActive ? STATUS.active : STATUS.pending;
 
   return (
-    <section className="mt-10 rounded-xl border bg-card/60 p-6 shadow-card">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <KeyRound className="h-5 w-5 text-primary" /> Attivazione dispositivo
+    <section className="rounded-lg border bg-background/40 p-3 sm:p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold sm:text-base">
+          <KeyRound className="h-4 w-4 shrink-0 text-primary" />
+          <span className="min-w-0 break-words">Attivazione dispositivo</span>
         </h2>
         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${headStatus.cls}`}>
           <headStatus.icon className="h-3.5 w-3.5" /> {headStatus.label}
@@ -80,7 +81,7 @@ export function ActivationCard() {
 
       {state.devices.length > 0 && (
         <>
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 break-words text-xs text-muted-foreground sm:text-sm">
             {state.isActive
               ? "La licenza è attiva. Per sicurezza il token non viene mostrato. Di seguito i dispositivi collegati: puoi revocarne la licenza in qualsiasi momento."
               : "Dispositivi collegati a questo account. Una licenza revocata blocca l'app sul dispositivo: per riusarla, riattivalo con il codice qui sotto."}
@@ -95,7 +96,7 @@ export function ActivationCard() {
 
       {!state.isActive && (
         <div className={state.devices.length > 0 ? "mt-6" : ""}>
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 break-words text-xs text-muted-foreground sm:text-sm">
             Al <span className="text-foreground">primo avvio</span> della DesktopApp, incolla questo token di
             attivazione per collegare il dispositivo al tuo account.
           </p>
@@ -108,8 +109,8 @@ export function ActivationCard() {
               </button>
             </div>
           ) : (
-            <p className="mt-4 text-sm text-muted-foreground">
-              Token non disponibile. Scarica una versione dalla card a sinistra per generarne uno.
+            <p className="mt-4 break-words text-xs text-muted-foreground sm:text-sm">
+              Token non disponibile. Scarica una versione dalla sezione "Versioni disponibili" per generarne uno.
             </p>
           )}
         </div>
@@ -121,7 +122,7 @@ export function ActivationCard() {
 function DeviceRow({ device, onRevoke, revoking }: { device: Activation; onRevoke: () => void; revoking: boolean }) {
   const s = STATUS[device.status];
   return (
-    <li className="flex flex-wrap items-center gap-3 rounded-lg border bg-card/50 px-4 py-3">
+    <li className="flex flex-wrap items-center gap-2.5 rounded-lg border bg-card/50 p-2.5 sm:px-3 sm:py-3">
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
         <MonitorSmartphone className="h-4 w-4" />
       </span>
