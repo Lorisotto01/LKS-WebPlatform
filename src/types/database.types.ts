@@ -39,15 +39,17 @@ export interface Database {
           currency: string; provider: string; provider_ref: string | null;
           status: string; created_at: string; paid_at: string | null;
           hwid: string | null; provider_subscription_id: string | null; is_recurring: boolean;
+          // v4.8.1 (0002): TTL del tentativo di pagamento.
+          expires_at: string;
         };
         Insert: {
           id?: string; email: string; kind: string; plan_code?: string | null;
           billing_cycle?: string | null; lock_type?: string | null;
           base_cents: number; discount_id?: string | null; amount_cents: number;
           currency?: string; provider: string; provider_ref?: string | null;
-          status?: string; created_at?: string; paid_at?: string | null;
+          status?: string; created_at?: string; paid_at?: string | null; expires_at?: string;
         };
-        Update: { status?: string; provider_ref?: string | null; paid_at?: string | null };
+        Update: { status?: string; provider_ref?: string | null; paid_at?: string | null; expires_at?: string };
         Relationships: [];
       };
       subscriptions: {
@@ -264,6 +266,12 @@ export interface Database {
       delete_my_account: {
         Args: Record<PropertyKey, never>;
         Returns: undefined;
+      };
+      // v4.8.1 (0002): l'utente annulla un proprio ordine ancora pending
+      // (ritorno dal cancel_url del provider). Restituisce lo stato risultante.
+      cancel_my_order: {
+        Args: { p_id: string };
+        Returns: string | null;
       };
       // v4.3.1 (0009): apre una segnalazione (chiamata dalla DesktopApp).
       open_report: {

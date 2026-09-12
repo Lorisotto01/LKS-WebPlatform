@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { getPlan, fmtEuro, PLANS } from "@/lib/plans";
+import { effectiveOrderStatus } from "@/lib/checkout";
 import type { Database } from "@/types/database.types";
 
 type Discount = Database["public"]["Tables"]["discounts"]["Row"];
@@ -302,7 +303,13 @@ function OrdersHistory() {
                 <td className="px-3 py-2 text-muted-foreground">{orderDesc(o)}</td>
                 <td className="px-3 py-2 text-right font-mono">{eur(o.amount_cents)}</td>
                 <td className="px-3 py-2 capitalize text-muted-foreground">{o.provider}</td>
-                <td className="px-3 py-2"><span className="rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ background: (STATUS_TONE[o.status] ?? "#8A94A6") + "22", color: STATUS_TONE[o.status] ?? "#8A94A6" }}>{o.status}</span></td>
+                {/* Stato derivato: un pending oltre il TTL è già scaduto anche
+                    se il job di scadenza non è ancora passato. */}
+                {(() => {
+                  const st = effectiveOrderStatus(o);
+                  const tone = STATUS_TONE[st] ?? "#8A94A6";
+                  return <td className="px-3 py-2"><span className="rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ background: tone + "22", color: tone }}>{st}</span></td>;
+                })()}
               </tr>
             ))}
           </tbody>

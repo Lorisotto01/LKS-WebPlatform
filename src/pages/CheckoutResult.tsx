@@ -1,30 +1,51 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { CheckCircle2, XCircle, Loader2, LayoutDashboard } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, LayoutDashboard, AlertTriangle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/Navbar";
+import { cancelOrder, effectiveOrderStatus, type OrderStatus } from "@/lib/checkout";
 
-/** Esito del checkout (success/cancel). In success verifica lo stato dell'ordine. */
+/**
+ * Esito del checkout (success/cancel).
+ *
+ * - `success`: il provider ha incassato, ma la verità arriva dal webhook. Si
+ *   attende qualche secondo che l'ordine passi a `paid`.
+ * - `cancel`: l'utente è tornato indietro dalla pagina di pagamento. L'ordine
+ *   viene chiuso SUBITO come `canceled`, senza aspettare la scadenza del TTL:
+ *   altrimenti resterebbe "in corso" in dashboard per mezz'ora.
+ */
 export function CheckoutResult() {
   const [params] = useSearchParams();
   const status = params.get("status");
   const orderId = params.get("order");
-  const [orderStatus, setOrderStatus] = useState<string | null>(null);
+  const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
   const [loading, setLoading] = useState(status === "success");
 
   useEffect(() => {
-    if (status !== "success" || !orderId) return;
+    if (!orderId) return;
+
+    if (status !== "success") {
+      cancelOrder(orderId);
+      return;
+    }
+
     let tries = 0;
+    let alive = true;
     const check = async () => {
-      const { data } = await supabase.from("orders").select("status").eq("id", orderId).maybeSingle();
-      setOrderStatus(data?.status ?? null);
-      if (data?.status === "paid" || tries >= 5) { setLoading(false); return; }
+      const { data } = await supabase.from("orders").select("status, expires_at").eq("id", orderId).maybeSingle();
+      if (!alive) return;
+      const eff = data ? effectiveOrderStatus(data) : null;
+      setOrderStatus(eff);
+      // Si smette di attendere appena l'esito è definitivo, o dopo ~9 secondi.
+      if (eff === "paid" || eff === "failed" || eff === "canceled" || tries >= 5) { setLoading(false); return; }
       tries++; setTimeout(check, 1500); // attende il webhook
     };
     check();
+    return () => { alive = false; };
   }, [status, orderId]);
 
   const paid = orderStatus === "paid";
+  const failed = orderStatus === "failed" || orderStatus === "canceled";
 
   return (
     <div className="min-h-screen">
@@ -43,9 +64,17 @@ export function CheckoutResult() {
               <h1 className="mt-6 text-3xl font-extrabold tracking-tight">Pagamento completato</h1>
               <p className="mt-2 text-muted-foreground">Il tuo piano è stato aggiornato. Grazie!</p>
             </>
+          ) : failed ? (
+            <>
+              <XCircle className="mx-auto h-14 w-14 text-destructive" />
+              <h1 className="mt-6 text-3xl font-extrabold tracking-tight">Pagamento non riuscito</h1>
+              <p className="mt-2 text-muted-foreground">
+                L'ordine è scaduto o è stato annullato e nessun addebito è stato effettuato. Ripeti l'acquisto per completarlo.
+              </p>
+            </>
           ) : (
             <>
-              <Loader2 className="mx-auto h-12 w-12 text-warning" />
+              <AlertTriangle className="mx-auto h-12 w-12 text-warning" />
               <h1 className="mt-6 text-2xl font-bold">In elaborazione</h1>
               <p className="mt-2 text-muted-foreground">
                 Il pagamento risulta ricevuto ma non ancora confermato. Aggiorna la Dashboard tra poco.

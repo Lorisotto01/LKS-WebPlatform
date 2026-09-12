@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Download, Sparkles, Clock, RefreshCw, Mail, User, MonitorDown, Trash2, Crown, ArrowUpRight, Receipt, KeyRound, Repeat } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Download, Sparkles, Clock, RefreshCw, Mail, User, MonitorDown, Trash2, Crown, ArrowUpRight, Receipt, KeyRound, Repeat, RotateCcw } from "lucide-react";
 import { supabase, RELEASES_BUCKET, SIGNED_URL_TTL_SECONDS } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/toast";
@@ -15,6 +16,7 @@ type Order = Database["public"]["Tables"]["orders"]["Row"];
 type UnlockFile = Database["public"]["Tables"]["unlock_files"]["Row"];
 type Subscription = Database["public"]["Tables"]["subscriptions"]["Row"];
 import { getPlan, fmtEuro, type PlanCode } from "@/lib/plans";
+import { effectiveOrderStatus, type OrderStatus } from "@/lib/checkout";
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
@@ -396,12 +398,40 @@ function PlanStatusCard({ plan, sub, onUpgrade, onRenew }: { plan: PlanCode; sub
   );
 }
 
+/**
+ * Aspetto del badge di stato. `pending` resta giallo solo finché il tentativo è
+ * davvero in corso: scaduto il TTL diventa rosso (vedi effectiveOrderStatus).
+ */
+const ORDER_BADGE: Record<OrderStatus, { label: string; className: string }> = {
+  paid:     { label: "pagato",     className: "bg-success/15 text-success" },
+  pending:  { label: "in attesa",  className: "bg-warning/15 text-warning" },
+  failed:   { label: "non riuscito", className: "bg-destructive/15 text-destructive" },
+  canceled: { label: "annullato",  className: "bg-muted text-muted-foreground" },
+};
+
+/** URL di /checkout che ripete lo stesso acquisto di un ordine non andato a buon fine. */
+function retryHref(o: Order): string {
+  return o.kind === "subscription"
+    ? `/checkout?plan=${o.plan_code ?? "essential"}&cycle=${o.billing_cycle ?? "year"}`
+    : `/checkout?lock=${o.lock_type ?? "env"}${o.hwid ? `&hwid=${encodeURIComponent(o.hwid)}` : ""}`;
+}
+
 function MyOrders({ orders, unlocks, onChanged }: { orders: Order[]; unlocks: Record<string, UnlockFile>; onChanged: () => void }) {
   const eur = (c: number) => `${(c / 100).toFixed(2)}€`;
   const desc = (o: Order) =>
     o.kind === "subscription"
       ? `${o.plan_code ?? ""} · ${o.billing_cycle === "year" ? "annuale" : "mensile"}`
       : o.lock_type === "perm" ? "PERMANENT_LOCK" : "ENV_LOCK";
+
+  // Il job di scadenza gira ogni 5 minuti: questo tick fa passare da solo a
+  // rosso un ordine che scade mentre la dashboard è aperta.
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const hasPending = orders.some((o) => effectiveOrderStatus(o) === "pending");
+    if (!hasPending) return;
+    const id = setInterval(() => tick((n) => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, [orders]);
 
   const download = async (uf: UnlockFile) => {
     const { data } = await supabase.storage.from("unlocks").createSignedUrl(uf.storage_path, 3600);
@@ -421,23 +451,34 @@ function MyOrders({ orders, unlocks, onChanged }: { orders: Order[]; unlocks: Re
         <ul className="mt-4 space-y-2.5">
           {orders.map((o) => {
             const uf = o.kind === "lock" ? unlocks[o.id] : undefined;
+            const state = effectiveOrderStatus(o);
+            const badge = ORDER_BADGE[state] ?? ORDER_BADGE.pending;
+            const closed = state === "failed" || state === "canceled";
             return (
-              <li key={o.id} className="flex flex-wrap items-center gap-3 rounded-lg border bg-card/50 px-4 py-3 text-sm">
+              <li key={o.id} className={`flex flex-wrap items-center gap-3 rounded-lg border bg-card/50 px-4 py-3 text-sm ${closed ? "border-destructive/25" : ""}`}>
                 <span className="grid h-8 w-8 place-items-center rounded-md bg-primary/10 text-primary">
                   {o.kind === "subscription" ? <Repeat className="h-4 w-4" /> : <KeyRound className="h-4 w-4" />}
                 </span>
                 <div className="min-w-0">
                   <p className="font-medium">{desc(o)}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString("it-IT")} · {o.provider}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(o.created_at).toLocaleDateString("it-IT")} · {o.provider}
+                    {state === "pending" && ` · scade alle ${new Date(o.expires_at).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}`}
+                  </p>
                 </div>
-                <span className="ml-auto font-mono">{eur(o.amount_cents)}</span>
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${o.status === "paid" ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>{o.status}</span>
+                <span className={`ml-auto font-mono ${closed ? "text-muted-foreground line-through" : ""}`}>{eur(o.amount_cents)}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.className}`}>{badge.label}</span>
+                {closed && (
+                  <Link to={retryHref(o)} className="inline-flex items-center gap-1.5 rounded-lg border border-input px-3 py-1.5 text-xs font-medium hover:bg-accent">
+                    <RotateCcw className="h-3.5 w-3.5" /> Riprova
+                  </Link>
+                )}
                 {uf && (
                   <button onClick={() => download(uf)} className="inline-flex items-center gap-1.5 rounded-lg bg-brand-gradient px-3 py-1.5 text-xs font-medium text-white shadow-glow hover:opacity-90">
                     <Download className="h-3.5 w-3.5" /> Scarica sblocco
                   </button>
                 )}
-                {o.kind === "lock" && !uf && o.status === "paid" && (
+                {o.kind === "lock" && !uf && state === "paid" && (
                   <span className="text-xs text-muted-foreground">Sblocco in preparazione…</span>
                 )}
               </li>

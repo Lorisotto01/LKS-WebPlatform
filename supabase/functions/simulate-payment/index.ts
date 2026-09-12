@@ -30,6 +30,11 @@ Deno.serve(async (req) => {
     if (order.email !== email) return json({ error: "forbidden" }, 403);
     if (order.provider !== "simulated") return json({ error: "not_simulated" }, 400);
     if (order.status === "paid") return json({ ok: true, alreadyPaid: true });
+    // TTL scaduto o annullato dall'utente: il tentativo va rifatto da zero.
+    // Qui non c'è un provider reale che possa sbloccare la situazione dopo.
+    if (order.status !== "pending" || new Date(order.expires_at) < new Date()) {
+      return json({ error: "order_expired", message: "Ordine scaduto: ripeti l'acquisto." }, 410);
+    }
 
     console.log("[simulate-payment] finalizzo ordine simulato:", orderId);
     await finalizeOrder(admin, orderId);

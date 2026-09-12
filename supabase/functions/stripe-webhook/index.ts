@@ -43,6 +43,16 @@ Deno.serve(async (req) => {
       const subId = typeof session.subscription === "string" ? session.subscription : null;
       console.log("[stripe-webhook] finalizzo ordine:", orderId, "| sub:", subId);
       if (orderId) await finalizeOrder(admin, orderId, { providerSubscriptionId: subId });
+    } else if (event.type === "checkout.session.expired") {
+      // La sessione è scaduta presso Stripe: chiudiamo subito l'ordine senza
+      // aspettare il giro di pg_cron. Solo se è ancora pending — un pagamento
+      // arrivato nel frattempo non va toccato.
+      const session = event.data.object;
+      const orderId = session.metadata?.order_id || session.client_reference_id;
+      console.log("[stripe-webhook] sessione scaduta, ordine:", orderId);
+      if (orderId) {
+        await admin.from("orders").update({ status: "failed" }).eq("id", orderId).eq("status", "pending");
+      }
     } else if (event.type === "invoice.paid") {
       // Rinnovo ricorrente automatico (dal secondo ciclo in poi).
       const inv = event.data.object;

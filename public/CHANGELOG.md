@@ -17,6 +17,80 @@ Versione corrente: **4.8.0**.
 
 ---
 
+## [Non rilasciato]
+
+### `webplatform` — ciclo di vita degli ordini: TTL, annullamento e checkout atomico
+
+Task "Errore ordini WebPlatform". Tre difetti distinti dello stesso flusso: un
+checkout fallito lasciava un ordine fantasma, un checkout abbandonato restava
+`pending` per sempre, e l'errore del provider non arrivava mai all'utente.
+
+- **Nessun record prima del redirect.** `create-checkout` non inserisce più
+  l'ordine come prima operazione: genera l'uuid in anticipo (serve a Stripe come
+  `metadata[order_id]`), apre la sessione presso il provider e scrive la riga
+  **solo** a sessione ottenuta. Se il provider rifiuta — chiave errata, importo
+  non valido, rete — la chiamata torna in errore senza aver creato nulla. Nel
+  caso opposto (sessione creata ma insert fallito) la sessione Stripe viene
+  chiusa con `/expire`, così non può esistere un pagamento senza ordine.
+- **TTL di 30 minuti.** Nuova colonna `orders.expires_at`, allineata alla
+  scadenza reale della sessione Stripe (`expires_at` sulla sessione in
+  `mode=payment`). Il job pg_cron `expire_stale_orders_5min` marca `failed` i
+  `pending` scaduti; il webhook `checkout.session.expired` fa lo stesso senza
+  attendere il giro di cron. Un pagamento che arrivasse comunque in ritardo
+  resta recuperabile: `finalizeOrder` porta a `paid` anche un ordine `failed`.
+- **Stato derivato lato UI.** Dashboard e pannello admin ricalcolano lo stato da
+  `expires_at`, così un ordine scaduto non appare mai "in attesa" nei minuti che
+  separano la scadenza dal passaggio del cron.
+- **Annullamento esplicito.** Nuova RPC `cancel_my_order`: tornando dal
+  `cancel_url` del provider l'ordine passa subito a `canceled`, distinto dal
+  `failed` da TTL scaduto perché è una rinuncia, non un tentativo a vuoto.
+- **Badge e ripetizione dell'ordine.** In dashboard i quattro stati hanno ora
+  colori distinti (verde/giallo/**rosso**/grigio) invece di "verde se pagato,
+  giallo tutto il resto"; gli ordini chiusi mostrano l'importo barrato e un
+  pulsante **Riprova** che riapre `/checkout` con gli stessi parametri.
+- **Errori del provider leggibili.** `functions.invoke` scartava il corpo delle
+  risposte non-2xx e mostrava "Edge Function returned a non-2xx status code":
+  ora il messaggio viene letto da `error.context` e arriva all'utente. Aggiunte
+  guardie preventive su `create-checkout`: chiave Stripe che non sia una secret
+  (`sk_`/`rk_`), importo sotto il minimo Stripe di 0,50 €, credenziali PayPal
+  non valide e `planCode`/`billingCycle`/`lockType` fuori dominio.
+- `simulate-payment` rifiuta con `410` gli ordini scaduti o annullati.
+
+### `webplatform` — `01_wipe_all.sql` allineato ai vincoli attuali di Supabase
+
+- **Lo storage non si azzera più da SQL.** Supabase blocca le `delete` dirette su
+  `storage.objects` con il trigger `storage.protect_delete()`, e lo script si
+  fermava con `42501`. Il blocco sana un difetto che lo script ammetteva da sé:
+  cancellare quelle righe rimuoveva i metadati ma lasciava i file nel backend,
+  orfani. Lo svuotamento passa ora dalla Storage API con il nuovo
+  `scripts/wipe-storage.mjs` (`npm run db:wipe:storage`, con `--dry-run` e
+  conferma esplicita), che preserva `assets` e cancella i file davvero. Il wipe
+  SQL si limita a contare cosa resta, senza fallire.
+- **I job pg_cron vengono disiscritti dal wipe.** Vivono nello schema `cron`, che
+  `drop schema public cascade` non tocca: sopravvivevano all'azzeramento
+  invocando funzioni inesistenti. Trascurabile finché il solo job era il purge
+  giornaliero, non più con `expire_stale_orders_5min` che gira ogni cinque
+  minuti. Vengono rimossi per nome, lasciando intatti eventuali job manuali.
+
+### `desktop` — cartella runtime spostata in `%ProgramData%\SecureLocalShare`
+
+- **Nuova root dei dati**: l'albero runtime non vive più in `%USERPROFILE%\Password_Saver_v3`
+  ma in `%ProgramData%\SecureLocalShare` (`RuntimePaths.ROOT_DIR_NAME` + il nuovo
+  `RuntimePaths.defaultBase()`, che legge la variabile `ProgramData` e ricade sulla home
+  utente dove non è definita). I dati diventano così condivisi a livello di macchina invece
+  di essere legati a un singolo profilo Windows.
+- **Migrazione automatica al primo avvio**: `RuntimePaths.resolveForStartup` sposta un albero
+  `Password_Saver_v3` preesistente nella nuova posizione e ne registra il percorso nel pointer
+  file. La migrazione parte solo se la nuova root non esiste ancora, così non sovrascrive mai
+  dati vivi; se lo spostamento fallisce (volume diverso, file bloccato, permessi mancanti) la
+  cartella legacy resta al suo posto e viene usata così com'è, senza perdita di dati.
+- `resolveOrCreate` resta ermetico (nessuna migrazione, nessun pointer): i test con `@TempDir`
+  restano isolati.
+- Il wizard continua a permettere la scelta della cartella e propone la nuova root come
+  default; il percorso scelto (pointer `~/.securelocalshare_root`) ha sempre la precedenza.
+
+---
+
 ## [4.8.0] — 2026-07-12
 
 Inversione della semantica dei dati in sblocco/ripristino e tracciamento server-side
