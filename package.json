@@ -16,7 +16,9 @@
     "functions:serve": "supabase functions serve",
     "functions:secrets": "supabase secrets set --env-file supabase/functions/.env",
     "functions:deploy": "supabase functions deploy create-checkout && supabase functions deploy simulate-payment && supabase functions deploy stripe-webhook --no-verify-jwt && supabase functions deploy paypal-webhook --no-verify-jwt && supabase functions deploy send-unlock-email && supabase functions deploy device-unlock --no-verify-jwt",
-    "db:push": "supabase db push"
+    "db:push": "supabase db push",
+    "db:wipe:storage": "node scripts/wipe-storage.mjs",
+    "db:wipe:storage:dry": "node scripts/wipe-storage.mjs --dry-run"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

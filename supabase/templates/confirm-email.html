@@ -1,0 +1,240 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="x-apple-disable-message-reformatting" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="supported-color-schemes" content="dark light" />
+  <title>Conferma il tuo account SecureLocalShare</title>
+  <!--[if mso]>
+  <noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
+  <![endif]-->
+  <style type="text/css">
+    /* Reset */
+    body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+    table, td { mso-table-lspace:0pt; mso-table-rspace:0pt; }
+    img { -ms-interpolation-mode:bicubic; border:0; outline:none; text-decoration:none; display:block; }
+    table { border-collapse:collapse !important; }
+    body { margin:0 !important; padding:0 !important; width:100% !important; height:100% !important; }
+    a { color:#5b8cff; }
+    /* Mobile */
+    @media screen and (max-width:620px) {
+      .wrap        { width:100% !important; }
+      .px          { padding-left:24px !important; padding-right:24px !important; }
+      .h1          { font-size:26px !important; line-height:34px !important; }
+      .btn a       { display:block !important; width:auto !important; }
+      .stack       { display:block !important; width:100% !important; }
+      .stack-gap   { height:12px !important; line-height:12px !important; font-size:12px !important; }
+    }
+  </style>
+</head>
+
+<body style="margin:0; padding:0; background-color:#070b18;">
+
+  <!-- Preheader (nascosto) -->
+  <div style="display:none; font-size:1px; color:#070b18; line-height:1px; max-height:0; max-width:0; opacity:0; overflow:hidden;">
+    Manca solo un passaggio: conferma il tuo indirizzo email e attiva SecureLocalShare.
+    &#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#070b18;">
+    <tr>
+      <td align="center" style="padding:32px 12px;">
+
+        <table role="presentation" class="wrap" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px; background-color:#0d132a; border-radius:16px; overflow:hidden; border:1px solid #1e2a4d;">
+
+          <!-- ============ BANNER ============ -->
+          <tr>
+            <td align="center" style="line-height:0; font-size:0;">
+              <a href="{{ .SiteURL }}" target="_blank" style="text-decoration:none;">
+                <img src="https://qjvlileynlwqxjjoyihg.supabase.co/storage/v1/object/public/assets/mail/banner-register.jpeg"
+                     width="600" height="200" alt="SecureLocalShare — Benvenuto a bordo"
+                     style="display:block; width:100%; max-width:600px; height:auto; border:0;" />
+              </a>
+            </td>
+          </tr>
+
+          <!-- ============ CORPO ============ -->
+          <tr>
+            <td class="px" style="padding:36px 40px 8px 40px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <p style="margin:0 0 14px 0; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:#38bdf8; font-weight:700;">
+                Registrazione completata
+              </p>
+              <h1 class="h1" style="margin:0 0 16px 0; font-size:30px; line-height:38px; color:#ffffff; font-weight:700;">
+                {{ if .Data.name }}Ciao {{ .Data.name }}, ci siamo quasi{{ else }}Ci siamo quasi{{ end }}
+              </h1>
+              <p style="margin:0 0 12px 0; font-size:16px; line-height:26px; color:#a8b3cf;">
+                Il tuo account <strong style="color:#e6ecff;">SecureLocalShare</strong> è stato creato.
+                Per attivarlo e iniziare a condividere i tuoi file in totale sicurezza,
+                conferma il tuo indirizzo email con il pulsante qui sotto.
+              </p>
+            </td>
+          </tr>
+
+          <!-- ============ CTA ============ -->
+          <tr>
+            <td class="px" align="center" style="padding:20px 40px 12px 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="btn">
+                <tr>
+                  <td align="center" bgcolor="#2563eb" style="border-radius:10px;">
+                    <!--[if mso]>
+                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word"
+                                 href="{{ .ConfirmationURL }}" style="height:52px;v-text-anchor:middle;width:300px;" arcsize="20%" stroke="f" fillcolor="#2563eb">
+                      <w:anchorlock/>
+                      <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">Conferma il mio account</center>
+                    </v:roundrect>
+                    <![endif]-->
+                    <!--[if !mso]><!-- -->
+                    <a href="{{ .ConfirmationURL }}" target="_blank"
+                       style="display:inline-block; padding:16px 38px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                              font-size:16px; font-weight:700; color:#ffffff; text-decoration:none; border-radius:10px; background-color:#2563eb;">
+                      Conferma il mio account
+                    </a>
+                    <!--<![endif]-->
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="px" align="center" style="padding:4px 40px 28px 40px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <p style="margin:0; font-size:13px; line-height:20px; color:#6b7794;">
+                Il link è valido per <strong style="color:#a8b3cf;">24 ore</strong>. Dopo la scadenza potrai richiederne uno nuovo dalla schermata di accesso.
+              </p>
+            </td>
+          </tr>
+
+          <!-- ============ DIVISORE ============ -->
+          <tr>
+            <td class="px" style="padding:0 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td height="1" style="height:1px; line-height:1px; font-size:0; background-color:#1e2a4d;">&nbsp;</td></tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- ============ BENVENUTO / FEATURES ============ -->
+          <tr>
+            <td class="px" style="padding:30px 40px 6px 40px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <h2 style="margin:0 0 6px 0; font-size:19px; line-height:26px; color:#ffffff; font-weight:700;">
+                Cosa puoi fare da subito
+              </h2>
+              <p style="margin:0 0 22px 0; font-size:15px; line-height:24px; color:#8d99b8;">
+                Il tuo spazio sicuro è pronto: le tue credenziali restano protette, sempre a portata di mano.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="px" style="padding:0 40px 8px 40px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+              <!-- Feature 1 -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:14px;">
+                <tr>
+                  <td width="44" valign="top" style="width:44px;">
+                    <table role="presentation" width="36" cellpadding="0" cellspacing="0" border="0" style="width:36px; background-color:#152046; border-radius:9px;">
+                      <tr><td align="center" height="36" style="height:36px; font-size:18px; line-height:36px; color:#38bdf8;">&#128274;</td></tr>
+                    </table>
+                  </td>
+                  <td valign="top" style="padding-left:14px;">
+                    <p style="margin:0 0 3px 0; font-size:15px; font-weight:700; color:#e6ecff; line-height:22px;">Crittografia forte</p>
+                    <p style="margin:0; font-size:14px; line-height:21px; color:#8d99b8;">I file vengono cifrati sul tuo dispositivo prima di lasciare la rete locale.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Feature 2 -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:14px;">
+                <tr>
+                  <td width="44" valign="top" style="width:44px;">
+                    <table role="presentation" width="36" cellpadding="0" cellspacing="0" border="0" style="width:36px; background-color:#152046; border-radius:9px;">
+                      <tr><td align="center" height="36" style="height:36px; font-size:18px; line-height:36px; color:#818cf8;">&#9889;</td></tr>
+                    </table>
+                  </td>
+                  <td valign="top" style="padding-left:14px;">
+                    <p style="margin:0 0 3px 0; font-size:15px; font-weight:700; color:#e6ecff; line-height:22px;">Condivisione istantanea</p>
+                    <p style="margin:0; font-size:14px; line-height:21px; color:#8d99b8;">Trasferimenti diretti tra i tuoi dispositivi, senza passare da server esterni.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Feature 3 -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;">
+                <tr>
+                  <td width="44" valign="top" style="width:44px;">
+                    <table role="presentation" width="36" cellpadding="0" cellspacing="0" border="0" style="width:36px; background-color:#152046; border-radius:9px;">
+                      <tr><td align="center" height="36" style="height:36px; font-size:18px; line-height:36px; color:#34d399;">&#128241;</td></tr>
+                    </table>
+                  </td>
+                  <td valign="top" style="padding-left:14px;">
+                    <p style="margin:0 0 3px 0; font-size:15px; font-weight:700; color:#e6ecff; line-height:22px;">Desktop e Web insieme</p>
+                    <p style="margin:0; font-size:14px; line-height:21px; color:#8d99b8;">Gestisci lo stesso spazio dall'app desktop o dal browser, con le stesse credenziali.</p>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- ============ LINK DI FALLBACK ============ -->
+          <tr>
+            <td class="px" style="padding:26px 40px 30px 40px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0a1024; border:1px solid #1e2a4d; border-radius:10px;">
+                <tr>
+                  <td style="padding:16px 18px;">
+                    <p style="margin:0 0 6px 0; font-size:12px; color:#6b7794; text-transform:uppercase; letter-spacing:1px; font-weight:700;">
+                      Il pulsante non funziona?
+                    </p>
+                    <p style="margin:0; font-size:13px; line-height:20px; color:#8d99b8; word-break:break-all;">
+                      Copia e incolla questo indirizzo nel tuo browser:<br />
+                      <a href="{{ .ConfirmationURL }}" target="_blank" style="color:#5b8cff; text-decoration:underline;">{{ .ConfirmationURL }}</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- ============ NOTA SICUREZZA ============ -->
+          <tr>
+            <td class="px" style="padding:0 40px 32px 40px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <p style="margin:0; font-size:13px; line-height:20px; color:#6b7794;">
+                Non hai richiesto tu questa registrazione? Ignora pure questo messaggio: senza conferma
+                l'account non verrà attivato e i dati saranno rimossi automaticamente.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+        <!-- ============ FOOTER ============ -->
+        <table role="presentation" class="wrap" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+          <tr>
+            <td class="px" align="center" style="padding:24px 40px 8px 40px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <p style="margin:0 0 8px 0; font-size:14px; font-weight:700; color:#8d99b8;">SecureLocalShare</p>
+              <p style="margin:0 0 12px 0; font-size:12px; line-height:19px; color:#5a6480;">
+                Questa email è stata inviata a <span style="color:#8d99b8;">{{ .Email }}</span> perché è stato creato un account con questo indirizzo.
+              </p>
+              <p style="margin:0; font-size:12px; line-height:19px; color:#5a6480;">
+                <a href="{{ .SiteURL }}" target="_blank" style="color:#5a6480; text-decoration:underline;">Sito</a>
+                &nbsp;•&nbsp;
+                <a href="{{ .SiteURL }}/faq" target="_blank" style="color:#5a6480; text-decoration:underline;">Supporto</a>
+                &nbsp;•&nbsp;
+                <a href="{{ .SiteURL }}/privacy" target="_blank" style="color:#5a6480; text-decoration:underline;">Privacy</a>
+              </p>
+              <p style="margin:14px 0 0 0; font-size:11px; color:#414a63;">
+                &copy; 2026 SecureLocalShare. Tutti i diritti riservati.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

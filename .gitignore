@@ -4,3 +4,5 @@ dist
 .env.local
 *.log
 .DS_Store
+# File di lavoro della CLI Supabase (locale, non versionato).
+supabase/.temp/
