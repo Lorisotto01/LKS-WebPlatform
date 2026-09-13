@@ -101,6 +101,7 @@ export const PLANS: Plan[] = [
     highlights: [
       "Tutto del piano Free",
       "Fino a 8 utenti per licenza",
+      "WatchTower · punteggio di sicurezza del vault",
       "LocalDrop Essential · file fino a 10 GB",
       "Cartelle illimitate e categorie documenti",
       "Caricamento archivi .zip / .rar",
@@ -134,6 +135,7 @@ export const PLAN_FEATURES: PlanFeature[] = [
   { key: "passwords",              label: "Password",                minPlan: "free",      category: "password" },
   { key: "credential_categories",  label: "Categorie credenziali",   minPlan: "free",      category: "password" },
   { key: "password_shares",        label: "Condivisione password",   minPlan: "free",      category: "password" },
+  { key: "watchtower",             label: "WatchTower",              minPlan: "essential", category: "password" },
   { key: "localdrop_upload",       label: "Caricamento documenti",   minPlan: "free",      category: "localdrop" },
   { key: "localdrop_text",         label: "Testo rapido",            minPlan: "free",      category: "localdrop" },
   { key: "localdrop_folders",      label: "Creazione cartelle",      minPlan: "free",      category: "localdrop" },
