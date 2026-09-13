@@ -3,7 +3,7 @@
 --
 -- Popola:
 --   * public.doc_settings   -> titolo e sottotitolo della pagina /docs
---   * public.doc_blocks     -> la guida completa di /docs (11 sezioni)
+--   * public.doc_blocks     -> la guida completa di /docs (12 sezioni)
 --   * public.author_profile -> la pagina /chi-sono
 --
 -- ----------------------------------------------------------------------------
@@ -81,7 +81,7 @@ insert into public.doc_blocks (position, type, content) values
   (110, 'code',      '{"lang":"text","code":"http://INDIRIZZO-IP-DEL-PC:9505"}'::jsonb),
 
   (120, 'title',     '{"text":"6. Cosa puoi fare","icon":"KeyRound"}'::jsonb),
-  (130, 'list',      '{"ordered":false,"items":["Password: salva credenziali in categorie, copia, mostra/nascondi, modifica.","Condivisione cifrata tra utenti della stessa rete.","LocalDrop: file e note ritrovabili da ogni dispositivo.","Notifiche quando qualcuno condivide qualcosa con te."]}'::jsonb),
+  (130, 'list',      '{"ordered":false,"items":["Password: salva credenziali in categorie, copia, mostra/nascondi, modifica.","Condivisione cifrata tra utenti della stessa rete.","LocalDrop: file e note ritrovabili da ogni dispositivo.","Notifiche quando qualcuno condivide qualcosa con te.","WatchTower: il punteggio di sicurezza del tuo vault (piano Essential)."]}'::jsonb),
 
   (140, 'title',     '{"text":"7. Il collegamento tra Web App e Desktop","icon":"Wifi"}'::jsonb),
   (150, 'paragraph', '{"text":"La Web App e l''app Desktop parlano tra loro **solo sulla rete locale**. Il browser e il server condividono la stessa origine, quindi nessun dato passa da server esterni e le richieste da fuori rete vengono rifiutate."}'::jsonb),
@@ -100,7 +100,14 @@ insert into public.doc_blocks (position, type, content) values
   (240, 'title',     '{"text":"11. Campi personalizzati nelle categorie","icon":"KeyRound"}'::jsonb),
   (250, 'paragraph', '{"text":"Quando crei o modifichi una **categoria di tipo Credenziali** puoi definire fino a **4 campi personalizzati** (anche dello stesso tipo, es. quattro campi numerici). Ogni credenziale assegnata a quella categoria mostrerà automaticamente quei campi nel form e nella scheda di dettaglio."}'::jsonb),
   (260, 'list',      '{"ordered":false,"items":["**Testuale** — testo libero con un numero massimo di caratteri (predefinito 30).","**Numerico** — un valore numerico.","**Data scadenza** — una data che attiva avvisi e banner di scadenza.","**Secret** — un valore riservato, cifrato come la password; puoi indicare se è **condivisibile** quando condividi la credenziale."]}'::jsonb),
-  (270, 'note',      '{"text":"Campi Data scadenza: quando la scadenza è vicina ricevi una **notifica entro 10 giorni** e sulla scheda compare in alto a destra un banner con l''icona di allerta — **rosso da 0 a 10 giorni**, **giallo da 11 a 30 giorni**. Il filtro **In scadenza** mostra tutte le credenziali entro 30 giorni. Quando la credenziale è scaduta il banner lascia il posto a una **mini-scheda rossa «Credenziale scaduta»**, ben visibile scorrendo l''elenco."}'::jsonb);
+  (270, 'note',      '{"text":"Campi Data scadenza: quando la scadenza è vicina ricevi una **notifica entro 10 giorni** e sulla scheda compare in alto a destra un banner con l''icona di allerta — **rosso da 0 a 10 giorni**, **giallo da 11 a 30 giorni**. Il filtro **In scadenza** mostra tutte le credenziali entro 30 giorni. Quando la credenziale è scaduta il banner lascia il posto a una **mini-scheda rossa «Credenziale scaduta»**, ben visibile scorrendo l''elenco."}'::jsonb),
+
+  (280, 'title',     '{"text":"12. WatchTower: il punteggio di sicurezza","icon":"ShieldCheck"}'::jsonb),
+  (290, 'paragraph', '{"text":"Nella Web App la voce **WatchTower** analizza le credenziali di cui sei proprietario e le riassume in un **punteggio da 1 a 1000**, con l''elenco esatto di quelle su cui intervenire. Il calcolo avviene **interamente sul PC host**: le password non escono mai dalla tua rete, e quello che il browser riceve sono solo verdetti e conteggi. WatchTower fa parte del piano **Essential**."}'::jsonb),
+  (300, 'list',      '{"ordered":false,"items":["**Deboli** — troppo corte o troppo prevedibili; il costo sul punteggio cresce mano a mano che la password è più debole.","**Riutilizzate** — la stessa password su più account: chi ne viola uno li apre tutti.","**Vecchie** — non cambiate da oltre un anno. Una credenziale salvata prima dell''arrivo di WatchTower non ha una data nota e non viene mai segnalata come vecchia.","**In scadenza** — riusa i campi Data scadenza delle categorie.","**Sito non sicuro** — l''indirizzo è in http:// invece che https://.","**Compromesse** — la password compare in archivi pubblici di credenziali violate (controllo facoltativo, vedi sotto)."]}'::jsonb),
+  (310, 'paragraph', '{"text":"Il punteggio è la media della salute delle singole credenziali, con dei **tetti massimi** per i casi gravi: finché esiste una password compromessa non si supera 400, con una password critica non si supera 650. Serve a evitare che novanta credenziali sane nascondano l''unica che va cambiata oggi. Il motivo del tetto è sempre scritto accanto al punteggio. Se una segnalazione non ti interessa puoi **ignorarla**: esce dalla lista e smette di pesare, ma resta contata e ripristinabile quando vuoi."}'::jsonb),
+  (320, 'note',      '{"text":"**Verifica delle violazioni note — spenta di default.** È l''unica funzione dell''app che apre una connessione verso l''esterno oltre all''aggiornamento automatico, quindi si attiva solo se sei tu a volerlo, dalle Impostazioni, e la scelta vale soltanto per il tuo account. Anche quando è attiva la password **non viene inviata**: si spediscono i primi 5 caratteri dell''impronta crittografica e il confronto si chiude sul tuo PC. Se la rete non risponde la categoria resta **non verificata** — non diventa mai un rassicurante zero."}'::jsonb);
+
 
 -- ============================================================================
 -- 3. PAGINA /chi-sono

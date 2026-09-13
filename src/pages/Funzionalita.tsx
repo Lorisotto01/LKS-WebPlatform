@@ -1,13 +1,13 @@
 import { Link } from "react-router-dom";
 import {
   Server, Smartphone, KeyRound, FolderSync, ShieldCheck, RefreshCw,
-  BookOpen, ArrowRight, Lock, Users, Bell, FileSignature, Wifi, Cloud,
+  BookOpen, ArrowRight, Lock, Users, Bell, FileSignature, Wifi, Cloud, Gauge,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { LogoMark } from "@/components/Logo";
 import { useSeo } from "@/lib/seo";
 
-type Mock = "desktop" | "webapp" | "password" | "localdrop" | "security" | "updates";
+type Mock = "desktop" | "webapp" | "password" | "watchtower" | "localdrop" | "security" | "updates";
 
 interface FeatureDef {
   icon: React.ComponentType<{ className?: string }>;
@@ -42,6 +42,18 @@ const FEATURES: FeatureDef[] = [
     body: "Salva le credenziali organizzate in categorie, copiale al volo, mostrale o nascondile, modificale ed eliminale. Ogni categoria può avere fino a 4 campi personalizzati (testo, numero, data di scadenza o secret), con avvisi e banner per le password in scadenza. Tutto sincronizzato tra i dispositivi della tua rete, sempre cifrato.",
     points: ["Categorie con campi personalizzati", "Avvisi e filtro per le scadenze", "Condivisione cifrata tra utenti"],
     mock: "password",
+  },
+  {
+    icon: Gauge,
+    badge: "WebApp · Essential",
+    title: "WatchTower: quanto è solido davvero il tuo vault",
+    body: "Una dashboard che analizza le tue credenziali e le riassume in un punteggio da 1 a 1000. Ti dice quali password sono deboli, quali hai riutilizzato su più account, quali non cambi da troppo tempo e quali stanno per scadere — con la lista esatta su cui intervenire, non un semaforo generico. L'analisi gira interamente sul PC host: le password non escono mai dalla tua rete.",
+    points: [
+      "Punteggio 1–1000 con andamento nel tempo",
+      "Password deboli, riutilizzate, vecchie e in scadenza",
+      "Verifica facoltativa delle violazioni note, spenta di default",
+    ],
+    mock: "watchtower",
   },
   {
     icon: FolderSync,
@@ -242,6 +254,37 @@ function FeatureMock({ kind }: { kind: Mock }) {
             ))}
           </div>
           <Bars rows={4} />
+        </Frame>
+      );
+    case "watchtower":
+      return (
+        <Frame title="WatchTower">
+          <div className="flex items-center gap-4">
+            <svg viewBox="0 0 64 64" className="h-16 w-16 shrink-0" role="img" aria-label="Punteggio 620 su 1000">
+              <circle cx="32" cy="32" r="26" fill="none" strokeWidth="7" className="stroke-border" />
+              <circle
+                cx="32" cy="32" r="26" fill="none" strokeWidth="7" strokeLinecap="round"
+                strokeDasharray="101 164" transform="rotate(-90 32 32)" className="stroke-warning"
+              />
+              <text x="32" y="36" textAnchor="middle" className="fill-foreground text-[15px] font-bold">620</text>
+            </svg>
+            <div>
+              <div className="text-sm font-semibold text-warning">A rischio</div>
+              <div className="text-[11px] text-muted-foreground">su 1000 · 24 credenziali analizzate</div>
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {[
+              { n: "1", l: "Compromesse", tone: "text-rose-400" },
+              { n: "4", l: "Deboli", tone: "text-warning" },
+              { n: "6", l: "Riutilizzate", tone: "text-muted-foreground" },
+            ].map((c) => (
+              <div key={c.l} className="rounded-lg border border-border/50 bg-background/40 p-2.5">
+                <div className={`text-lg font-bold leading-none ${c.tone}`}>{c.n}</div>
+                <div className="mt-1 text-[10px] text-muted-foreground">{c.l}</div>
+              </div>
+            ))}
+          </div>
         </Frame>
       );
     case "localdrop":

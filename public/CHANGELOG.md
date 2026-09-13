@@ -19,6 +19,52 @@ Versione corrente: **4.8.2**.
 
 ## [Non rilasciato]
 
+### `desktop` + `webapp` — WatchTower: dashboard di sicurezza dell'account (task 869f0tcka)
+
+- **Nuova pagina `/watchtower`** nella Web App LAN: punteggio di sicurezza da 1 a 1000, griglia
+  delle sei categorie di problemi (compromesse, deboli, riutilizzate, vecchie, in scadenza, sito
+  non sicuro) e lista delle credenziali coinvolte, con apertura e modifica diretta.
+- **Analisi interamente sull'host**: solo il backend può decifrare le password, quindi
+  `it.sottocorno.api.watchtower` decifra, misura e scarta il segreto dentro un singolo giro di
+  ciclo. Il report esposto dall'API contiene esclusivamente verdetti e conteggi — un test
+  verifica che nessuna password compaia nel JSON.
+- **Stima di entropia** (`PasswordEntropy`) al posto del misuratore a cinque livelli del client:
+  penalizza ripetizioni, sequenze, cammini di tastiera, parole comuni e la forma
+  "parola + due cifre + simbolo", che supera ogni regola di complessità restando indovinabile.
+- **Il costo della debolezza è una curva continua nei bit**, non due scalini: con le sole fasce
+  una password da 9 bit e una da 13 producevano lo stesso identico punteggio, rendendo inutile
+  il numero proprio dove serve di più. La curva passa per 0 bit → ×0.10, 28 bit → ×0.60 e
+  40 bit → ×1.00, quindi ogni bit in più vale qualcosa e i due tratti si incontrano senza
+  scalino. La soglia dei 28 bit resta solo per la severità mostrata e per il tetto
+  sul punteggio dell'account, che sono scelte di policy e non misure.
+- **Punteggio come media delle salute per credenziale, con tetti**: sottrarre una penalità fissa
+  per problema porterebbe a zero qualsiasi vault reale; la media da sola lascerebbe una password
+  compromessa nascosta dietro novanta sane. Quindi media, poi tetto a 400 (compromesse), 650
+  (password critica) e 800 (oltre il 30% riutilizzate), con il motivo sempre mostrato accanto al
+  punteggio. Nessuna credenziale ⇒ nessun punteggio: un 1000 di default sarebbe falso.
+- **Verifica violazioni note (HIBP)**, **opt-in per utente e spenta di default**: unica funzione
+  che apre una connessione oltre l'auto-update. Usa k-anonymity (solo il prefisso di 5 caratteri
+  dell'hash SHA-1 lascia la macchina), invia `Add-Padding`, e in caso di errore o rete assente
+  risponde "non verificato", mai "nessuna violazione". La categoria mostra un trattino invece di
+  uno zero rassicurante finché nessuno ha davvero guardato.
+- **Ignora per coppia (credenziale, check)**: l'avviso esce dalla lista e smette di pesare sul
+  punteggio, ma resta contato e ripristinabile; gli altri controlli sulla stessa credenziale
+  continuano a valere.
+- **Storico e avvisi**: uno snapshot al giorno per utente in `watchtower.lks` (soli aggregati,
+  retention 90 giorni), sparkline a 30 giorni con delta, e nuova notifica SSE
+  `WATCHTOWER_ALERT` quando compare una password compromessa o il punteggio cala di oltre 100
+  punti, con throttle di 24 ore.
+- **Gating**: gli endpoint del report richiedono il piano **Essential** (`PlanCatalog`); la
+  pagina resta raggiungibile dai Free e mostra cosa sblocca il piano. Le preferenze restano
+  libere, così anche un utente Free può rifiutare il breach check.
+- **Schema credenziali**: nuovi campi `dataCreazione`, `dataUltimaModificaPassword` e
+  `watchtowerIgnored`, tutti opzionali. I vault esistenti si leggono senza migrazione e una
+  credenziale con data ignota non viene mai segnalata come vecchia. La data di rotazione si
+  aggiorna solo quando la password cambia davvero: con GCM il cifrato cambia a ogni salvataggio,
+  quindi confrontarlo marcherebbe come rotazione qualsiasi modifica.
+- **Log**: una sola riga `WATCHTOWER_SCAN` per scansione invece di una `REVEAL` per credenziale.
+- `README.md` aggiornato: l'auto-update non è più l'unica chiamata di rete possibile.
+
 ### `desktop` — cartella runtime spostata in `%ProgramData%\SecureLocalShare`
 
 - **Nuova root dei dati**: l'albero runtime non vive più in `%USERPROFILE%\Password_Saver_v3`
