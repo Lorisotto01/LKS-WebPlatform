@@ -78,7 +78,10 @@ insert into public.doc_blocks (position, type, content) values
 
   (90,  'title',     '{"text":"5. Accedere dagli altri dispositivi","icon":"Smartphone"}'::jsonb),
   (100, 'paragraph', '{"text":"Dagli altri dispositivi non serve installare nulla: apri il browser e vai all''indirizzo del PC host sulla rete locale, porta 9505."}'::jsonb),
-  (110, 'code',      '{"lang":"text","code":"http://INDIRIZZO-IP-DEL-PC:9505"}'::jsonb),
+  (110, 'code',      '{"lang":"text","code":"https://INDIRIZZO-IP-DEL-PC:9505"}'::jsonb),
+  (112, 'paragraph', '{"text":"Il collegamento è **cifrato**, quindi l''indirizzo comincia con `https://`. Alla prima apertura il browser mostra un avviso di sicurezza: è previsto. Il certificato lo emette il tuo computer, non un ente esterno — nessun ente al mondo può emetterne uno per un indirizzo di rete privata. Puoi proseguire (su Chrome ed Edge: **Avanzate → Procedi**), oppure togliere l''avviso una volta per tutte installando il certificato."}'::jsonb),
+  (114, 'paragraph', '{"text":"Per installarlo: sul pannello dell''app Desktop premi **Certificato LAN** e salva il file, poi portalo sul dispositivo e installalo. Va fatto **una volta per dispositivo**; da quel momento l''avviso non torna più, nemmeno quando cambia l''indirizzo della rete."}'::jsonb),
+  (116, 'list',      '{"ordered":false,"items":["**Windows** — doppio clic sul file, poi Computer locale e Autorità di certificazione radice attendibili.","**Android** — Impostazioni, Sicurezza, Installa certificato CA.","**iPhone e iPad** — apri il file e installa il profilo, poi Impostazioni, Generali, Info, Attendibilità certificati: lì va attivato, altrimenti il profilo da solo non basta."]}'::jsonb),
 
   (120, 'title',     '{"text":"6. Cosa puoi fare","icon":"KeyRound"}'::jsonb),
   (130, 'list',      '{"ordered":false,"items":["Password: salva credenziali in categorie, copia, mostra/nascondi, modifica.","Condivisione cifrata tra utenti della stessa rete.","LocalDrop: file e note ritrovabili da ogni dispositivo.","Notifiche quando qualcuno condivide qualcosa con te.","WatchTower: il punteggio di sicurezza del tuo vault (piano Essential)."]}'::jsonb),
@@ -95,7 +98,7 @@ insert into public.doc_blocks (position, type, content) values
   (210, 'warning',   '{"text":"PERMANENT_LOCK (10 tentativi falliti): sblocco solo con un unlock.lks firmato dall''autore, verificato per firma, hardware ID e scadenza."}'::jsonb),
 
   (220, 'title',     '{"text":"10. Problemi comuni (FAQ)","icon":"HelpCircle"}'::jsonb),
-  (230, 'list',      '{"ordered":false,"items":["Web App irraggiungibile dal telefono: stessa rete, app avviata, firewall sulla porta 9505.","Master password dimenticata: non è recuperabile per scelta di sicurezza.","Windows segnala l''app come non riconosciuta: è normale per un''app nuova, procedi con Esegui comunque.","Uso fuori casa: per progetto funziona solo nella rete locale del PC host."]}'::jsonb),
+  (230, 'list',      '{"ordered":false,"items":["Web App irraggiungibile dal telefono: stessa rete, app avviata, firewall sulla porta 9505.","Avviso di sicurezza del browser: è previsto, il certificato lo emette il tuo computer. Prosegui, oppure installa il certificato dal pannello (Certificato LAN) per non vederlo più.","Master password dimenticata: non è recuperabile per scelta di sicurezza.","Windows segnala l''app come non riconosciuta: è normale per un''app nuova, procedi con Esegui comunque.","Uso fuori casa: per progetto funziona solo nella rete locale del PC host."]}'::jsonb),
 
   (240, 'title',     '{"text":"11. Campi personalizzati nelle categorie","icon":"KeyRound"}'::jsonb),
   (250, 'paragraph', '{"text":"Quando crei o modifichi una **categoria di tipo Credenziali** puoi definire fino a **4 campi personalizzati** (anche dello stesso tipo, es. quattro campi numerici). Ogni credenziale assegnata a quella categoria mostrerà automaticamente quei campi nel form e nella scheda di dettaglio."}'::jsonb),

@@ -13,11 +13,134 @@ Storico delle modifiche rilevanti del progetto, raggruppate per modulo:
 | **PATCH** | bugfix, allineamenti, rifiniture |
 
 Più interventi nella stessa sessione condividono la stessa versione, distinti per scope.
-Versione corrente: **4.8.2**.
+Versione corrente: **4.9.1** (Tool-CLI: **2.4.1**).
 
 ---
 
 ## [Non rilasciato]
+
+_Nessuna modifica in attesa di rilascio._
+
+---
+
+## [4.9.1] — 2026-09-14
+
+Certificato della rete locale firmato da una CA dell'installazione, codice di registrazione
+persistente e WatchTower nascosto a chi ha il piano Free.
+
+### `desktop` — l'avviso del certificato non torna più a ogni cambio di rete
+
+- **Il computer crea una propria autorità di certificazione**, una volta sola, e con quella firma
+  il certificato del server locale. Sul pannello compare **"Certificato LAN"**: salvi il file, lo
+  installi sul telefono o sul tablet una volta sola e da lì in poi quel dispositivo apre la WebApp
+  senza più nessun avviso.
+- **Il punto non è il primo avviso, è il suo ritorno.** Prima il certificato veniva rifatto ogni
+  volta che cambiava l'indirizzo della rete (rete nuova, router riacceso, indirizzo diverso
+  assegnato dal modem): l'eccezione accettata sul telefono smetteva di valere e l'avviso tornava,
+  senza che si capisse perché. Ora a cambiare è solo il certificato del server, mentre l'autorità
+  resta la stessa: chi l'ha installata non se ne accorge nemmeno.
+- **Chi non installa niente non perde nulla**: avviso al primo accesso, esattamente come prima, e
+  traffico cifrato in entrambi i casi.
+- L'autorità è **limitata per costruzione** a `localhost`, ai nomi di rete domestica e agli
+  indirizzi privati: non può firmare per nessun sito di Internet, nemmeno se il file venisse
+  sottratto dal computer.
+- L'aggiornamento non chiede nulla: al primo avvio il vecchio certificato viene sostituito da solo.
+
+### `desktop` — il codice di registrazione non cambia più a ogni avvio
+
+- Il codice a sei caratteri **resta lo stesso** fra un avvio e l'altro. Prima ne veniva generato
+  uno nuovo a ogni riavvio dell'applicazione, e chi stava aggiungendo più persone si ritrovava il
+  codice appena dettato non più valido.
+- Accanto al codice c'è ora **"Rigenera"**: serve quando il codice è arrivato a qualcuno che non
+  doveva averlo. Da quel momento il vecchio non funziona più; gli account già creati non sono
+  toccati.
+
+### `desktop` / `webapp` — WatchTower non compare più con il piano Free
+
+- Con un piano Free la scheda **WatchTower** non appare più nelle impostazioni della WebApp: era
+  visibile e, soprattutto, **funzionante**, mentre tutto il resto della funzione richiedeva il
+  piano Essential.
+- La preferenza in questione decide se l'applicazione può collegarsi a un servizio esterno per
+  controllare le password violate: non doveva essere raggiungibile senza il piano che la include.
+- La pagina WatchTower resta visibile e continua a spiegare cosa sblocca l'aggiornamento del piano.
+
+---
+
+## [4.9.0] — 2026-09-13
+
+WatchTower, strumenti di sviluppo per i dati demo e nuova plancia del Tool-CLI (2.4.1).
+
+### `tool-cli` — plancia al posto della griglia, con i blocchi letti da Supabase
+
+- **Colonna di navigazione permanente**: le sei operazioni non spariscono più quando ne apri una.
+  Sono raggruppate per scopo (Sblocco · Release · Chiavi) invece che per numero d'ordine, così
+  passare dalla validazione di un lock alla generazione dello sblocco — due passi dello stesso
+  lavoro — non richiede più di tornare indietro. "Genera chiavi" ha un colore diverso dalle altre
+  perché non è la stessa cosa: una nuova coppia rende non verificabili le release già firmate.
+- **La schermata iniziale mostra lo stato invece di un menù**: quale keystore è collegato e con
+  quali impronte Ed25519, quali dispositivi risultano bloccati, quali unlock sono stati emessi di
+  recente. Prima metà finestra era vuota e l'unica informazione era "keystore connesso", che non
+  diceva né quale keystore né quali chiavi.
+- **Blocchi letti da Supabase** (`lock_events`, sola lettura) con la chiave `service_role` presa da
+  `.env`. Sola lettura per scelta: risolvere un blocco è compito della DesktopApp quando applica un
+  `unlock.lks` valido, e duplicare quella logica qui vorrebbe dire poter dichiarare sbloccato un
+  dispositivo che non lo è. Senza configurazione o senza rete la tabella spiega perché è vuota,
+  invece di restare vuota e basta.
+- **Icone ridisegnate**: erano costruite su coordinate intere ricavate da `size / 4`, e a 16 px le
+  loro suddivisioni cadevano a 1 o a 0 — chiave e chiave-con-più diventavano la stessa macchia, e
+  il riquadro con raggio fisso a 12 su un lato di 16 si arrotondava fino a sembrare un cerchio.
+  Ora ogni glifo è definito una volta su una griglia 24×24 e scalato, con spessore del tratto e
+  raggio proporzionati alla dimensione. Nella colonna i glifi sono nudi: un quadratino con bordo
+  accanto a una voce di menu sembra un pulsante minuscolo, non un'icona.
+- **Corretto un click che non funzionava**: in Swing gli eventi del mouse non risalgono al
+  genitore, quindi un click sull'etichetta di testo di una voce — cioè il punto che chiunque mira
+  — finiva sulla `JLabel` e moriva lì. L'ascoltatore viene ora registrato su tutti i discendenti.
+- **Il registro `output/audit.log` finalmente si legge**: esisteva già ma non lo apriva nessuno.
+- `Theme.RoundedPanel` ora si può ricolorare a runtime (serve all'evidenziazione della colonna) e
+  l'impronta delle chiavi è passata in `Fingerprints`, condivisa fra plancia e "Mostra chiavi".
+- Versione del tool allineata a **2.4.0** fra `pom.xml` e titolo della finestra.
+
+### `desktop` — strumenti di sviluppo: dati demo iniettabili e rimovibili
+
+- **Due pulsanti sul pannello host**, "Dati demo" e "Rimuovi demo", che popolano il vault e lo
+  ripuliscono. Pochi utenti e molti dati a testa: 4 utenti finti, e per **ogni** account — finti e
+  reali — 8 categorie, 28 credenziali, 7 cartelle annidate su 3 livelli e 14 file, di cui 3
+  archivi `.lkszip` che sono veri ZIP con dentro delle entry, cosi' anche l'estrazione ha qualcosa
+  da estrarre.
+- **Generazione per proprietario, non a caso**: le credenziali di un account stanno nelle sue
+  categorie e i suoi file nelle sue cartelle. Mescolarli produrrebbe stati che l'applicazione da
+  sola non potrebbe mai creare, e che quindi non ha senso provare.
+- **Copertura completa di WatchTower**: ogni account riceve almeno una credenziale per ciascuna
+  categoria — debole, critica, riutilizzata, vecchia, scaduta, in scadenza vicina e lontana, sito
+  in `http://` — perché una categoria vuota è una parte di interfaccia che non si vede mai. Le
+  compromesse usano password certamente presenti negli archivi pubblici di violazioni e si
+  accendono appena si attiva la verifica facoltativa.
+- **Non esistono nella build distribuita**: i pulsanti non vengono costruiti a meno che l'app non
+  sia avviata con `-Dlks.devTools=true` o `LKS_DEV_TOOLS=true`. Non è una funzione nascosta, è una
+  funzione assente — scrivere dati finti in un vault reale non è qualcosa che un utente debba
+  poter fare per sbaglio.
+- **Registro degli id in `cfg/demo.lks`** al posto del marcatore `[TEST]` nei nomi. Il marcatore
+  funzionava ma rendeva ogni schermata sgradevole da leggere; ora i nomi sono puliti e la traccia
+  di cosa è stato generato vive fuori dai dati. Sta in `cfg` e non in `data` perché non è
+  contenuto del vault. Contiene solo identificativi: chi lo legge sa **quali** righe sono finte,
+  non cosa contengono.
+  Il rovescio della medaglia, che va saputo: cancellando quel file i dati generati restano ma non
+  sono più rimovibili col pulsante. La rimozione continua comunque a riconoscere il vecchio
+  marcatore, così un vault popolato prima dell'aggiornamento si ripulisce lo stesso.
+- **Categorie senza doppioni**: ogni account prende una fetta di nomi riservata, invece di
+  ricevere tutti la stessa lista — cinque "Social" identiche, una per utente, sembravano un errore
+  del generatore. Portate a 4 di credenziali e 2 di documenti per account.
+- Gli oggetti generati portano la descrizione "Generato per la demo", che si legge aprendoli e non
+  invade gli elenchi.
+- **L'account del proprietario** (quello con la stessa email di `activationEmail`) riceve dati
+  demo di sua proprietà — altrimenti entrando con le proprie credenziali si troverebbero
+  schermate vuote — ma non viene mai modificato né cancellato, nemmeno se gli venisse scritto il
+  marcatore nel nome.
+- Le password generate sono volutamente eterogenee (deboli, riutilizzate, robuste, scadenze
+  passate e vicine, qualche sito in `http://`), così WatchTower ha qualcosa di realistico da
+  mostrare invece di un punteggio pieno.
+- Test di andata e ritorno: dopo iniezione + rimozione il vault torna identico, blob su disco
+  compresi, e le credenziali vere restano decifrabili con lo stesso contenuto.
 
 ### `desktop` + `webapp` — WatchTower: dashboard di sicurezza dell'account (task 869f0tcka)
 
