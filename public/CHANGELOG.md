@@ -19,7 +19,45 @@ Versione corrente: **4.9.1** (Tool-CLI: **2.4.1**).
 
 ## [Non rilasciato]
 
-_Nessuna modifica in attesa di rilascio._
+### `services` / `desktop` — Segnalazioni: l'allegato non si caricava più (task 869f33v5b)
+
+- **Causa trovata**: la policy che permetteva alla DesktopApp (chiave anonima) di caricare uno
+  screenshot su una segnalazione verificava l'esistenza della segnalazione con una query diretta
+  sulla tabella `reports` — ma quella tabella ha la sua sicurezza a livello di riga (RLS) attiva e,
+  per il ruolo anonimo, non concede alcuna lettura. Il controllo risultava quindi sempre "non
+  trovata" e ogni upload falliva con `403 — new row violates row-level security policy`, non solo
+  occasionalmente.
+- La verifica ora passa da una funzione dedicata che esegue con i permessi del proprietario
+  (bypassando la RLS di `reports`, come già avviene per il controllo dei blocchi dispositivo),
+  mantenendo lo stesso vincolo di sicurezza: l'upload resta accettato solo dentro una segnalazione
+  reale aperta nelle ultime 24 ore.
+- Corretto anche lo scroll della finestra "Dettaglio segnalazione": con una descrizione lunga o più
+  note di lavorazione il contenuto veniva tagliato senza modo di vederlo. Ora l'intera finestra
+  scorre e il riquadro di testo calcola l'altezza in modo prevedibile invece di affidarsi al
+  ridimensionamento automatico (inaffidabile prima che il componente sia disegnato una prima volta).
+
+### `desktop` — Due difetti di layout: aggiornamento e nuova segnalazione (task 869f33v9g)
+
+- La finestra "Aggiornamento disponibile" / "Aggiornamento obbligatorio" a volte si apriva troppo
+  bassa, con i pulsanti **Scarica e installa** / **Salta versione** (o **Aggiorna ora** / **Esci**)
+  fuori dai bordi visibili — restava solo la ✕ in alto. Causa: un'etichetta con testo HTML (le note
+  di rilascio) può riportare un'altezza preferita sbagliata al primo calcolo del layout, prima che
+  Swing abbia stabilizzato il rendering. La finestra ora calcola le dimensioni due volte prima di
+  posizionarsi, eliminando l'errore.
+- Nel form "Apri una segnalazione", il menu **Tipologia** accanto al campo **Titolo** aveva
+  un'altezza diversa dal campo (un terzo circa) e appariva disallineato sulla stessa riga. Ora ha
+  la stessa altezza del campo titolo.
+
+### `webplatform` — Changelog del sito: perché una voce nuova non appare subito (task 869f34rxx)
+
+- **Sì, serve un deploy**: la pagina `/changelog` del sito legge un file statico incluso nella
+  build di Netlify (`public/CHANGELOG.md`), non il database. Aggiungere una voce qui, nel changelog
+  dell'app, non tocca quel file: il sito (`LKS-WebPlatform`) è un **repository separato** da questo,
+  e la build di Netlify non ha accesso a questo `CHANGELOG.md`.
+- Per pubblicare una voce sul sito serve, nel repository del sito: `npm run sync:changelog`
+  (copia il file), poi commit e push di `public/CHANGELOG.md` — il push avvia il deploy automatico
+  su Netlify. Il passaggio è ora documentato in `Web Platform/DEPLOY.md` §5, così da non doverlo
+  riscoprire ogni volta.
 
 ---
 
