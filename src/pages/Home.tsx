@@ -1,4 +1,5 @@
 import { useNavigate, Link } from "react-router-dom";
+import { APP_VERSION_LABEL } from "@/lib/version";
 import {
   Download,
   ArrowRight,
@@ -208,7 +209,7 @@ export function Home() {
           <div className="pointer-events-none absolute inset-0 bg-hero-glow opacity-70" />
           <div className="relative">
             <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground">
-              <Check className="h-3.5 w-3.5 text-primary" /> v4.3.4 - Disponibile ora
+              <Check className="h-3.5 w-3.5 text-primary" /> {APP_VERSION_LABEL} - Disponibile ora
             </span>
             <h2 className="mt-6 text-3xl font-extrabold tracking-tight sm:text-4xl">
               Pronto a riprendere
@@ -279,7 +280,7 @@ function AppMockup() {
             <LogoMark className="h-5 w-5" />
             <div className="leading-tight">
               <div className="text-[11px] font-semibold">SecureLocalShare</div>
-              <div className="text-[9px] text-muted-foreground">v4.3.4 · LAN</div>
+              <div className="text-[9px] text-muted-foreground">{APP_VERSION_LABEL} · LAN</div>
             </div>
           </div>
           <div className="h-px bg-border/60" />
@@ -446,7 +447,7 @@ function SiteFooter() {
       </div>
       <div className="border-t border-border/40">
         <p className="mx-auto max-w-6xl px-6 py-5 text-xs text-muted-foreground">
-          (c) {new Date().getFullYear()} SecureLocalShare - Lorenzo Sottocorno - v4.3.4
+          (c) {new Date().getFullYear()} SecureLocalShare - Lorenzo Sottocorno - {APP_VERSION_LABEL}
         </p>
       </div>
     </footer>

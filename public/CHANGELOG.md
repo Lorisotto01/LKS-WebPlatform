@@ -13,11 +13,245 @@ Storico delle modifiche rilevanti del progetto, raggruppate per modulo:
 | **PATCH** | bugfix, allineamenti, rifiniture |
 
 Più interventi nella stessa sessione condividono la stessa versione, distinti per scope.
-Versione corrente: **4.8.2**.
+Versione corrente: **4.9.3** (Tool-CLI: **2.4.1**).
 
 ---
 
-## [Non rilasciato]
+## [4.9.3] — 2026-09-22
+
+Il certificato della rete locale viene rimosso: la WebApp torna a viaggiare in HTTP, con un solo
+indirizzo da aprire e nessun file da installare sui dispositivi.
+
+### `desktop` — niente più certificato da installare
+
+- **Il pulsante "Certificato LAN" non c'è più**, e con lui l'intera procedura di installazione
+  dell'autorità di certificazione su Windows, Android e iPhone: era un passaggio manuale, da
+  ripetere dispositivo per dispositivo, e non valeva quello che chiedeva.
+- **"Avvia Frontend" apre `http://localhost:9505`.** Prima apriva l'indirizzo di rete in `https://`,
+  con l'avviso del browser davanti alla WebApp: ora il browser di questa macchina va dritto.
+- **Dagli altri dispositivi** si legge l'indirizzo mostrato in alto nel pannello — ora scritto per
+  intero, `http://192.168.x.x:9505` — e lo si digita su telefono o tablet collegati alla stessa
+  rete. Il server è sempre uno solo: `localhost` e l'indirizzo di rete portano allo stesso posto.
+
+### `desktop` — cosa cambia in concreto
+
+- **I segnalibri salvati con `https://` non rispondono più**: vanno rifatti togliendo la `s`.
+- **Il collegamento con i dispositivi della rete non è più cifrato.** Chi è sulla stessa rete
+  può leggere quello che passa, password di accesso compresa. Fino alla 4.9.2 il canale era
+  protetto, al prezzo di quell'installazione manuale; da qui in avanti la protezione è la rete
+  stessa, quindi va usato su reti di cui ci si fida.
+- Il backend resta raggiungibile **solo da questo computer**, come prima: sulla rete si affaccia
+  unicamente il server della WebApp.
+- Il file del certificato già presente nelle installazioni esistenti resta sul disco, inutilizzato.
+
+### `webapp` — la copia delle password funziona anche dai dispositivi esterni
+
+- Senza collegamento cifrato il browser **nega l'accesso agli appunti**, e il pulsante "copia"
+  sarebbe rimasto muto su telefono e tablet. È stato aggiunto un secondo metodo di copia che
+  funziona anche in quelle condizioni.
+- La **cancellazione automatica dopo 15 secondi** lì non è possibile: il messaggio di conferma
+  ora lo dice, invece di promettere una pulizia che non avverrebbe. Da questo computer la
+  cancellazione automatica continua a funzionare come prima.
+
+### `webplatform` — il numero di versione nel sito si aggiorna da solo
+
+- Nel piede della pagina, nel riquadro “Disponibile ora” e nell'anteprima del pannello si leggeva
+  **v4.3.4**: tre numeri scritti a mano, fermi da sei rilasci. Chi arrivava sul sito vedeva
+  un'applicazione vecchia di mesi.
+- Ora il numero viene **letto dal CHANGELOG al momento della build**, dalla stessa riga
+  “Versione corrente” che alimenta la pagina `/changelog`: pubblicare una versione nuova basta
+  a farlo comparire ovunque, senza ritocchi.
+
+### `desktop` — rigenerare `Costant.ts` non cancella più l'indirizzo della WebPlatform
+
+- `SetUp.java` riscrive i parametri statici della WebApp (host, porte, versione) prima del
+  confezionamento, ma **non emetteva `PLATFORM_URL`**: dopo averlo eseguito la costante spariva
+  dal file e la build della WebApp si fermava, perché il redirect all'upgrade del piano
+  (`AuthContext`, pagina WatchTower) la importa. Ora viene scritta insieme alle altre.
+
+---
+
+## [4.9.2] — 2026-09-19
+
+Tre correzioni a difetti segnalati dall'uso: l'allegato delle segnalazioni torna a caricarsi, la
+finestra di aggiornamento non lascia più i propri pulsanti fuori dallo schermo e il form di nuova
+segnalazione è leggibile per intero.
+
+### `services` / `desktop` — Segnalazioni: l'allegato non si caricava più (task 869f33v5b)
+
+- **Causa trovata**: la policy che permetteva alla DesktopApp (chiave anonima) di caricare uno
+  screenshot su una segnalazione verificava l'esistenza della segnalazione con una query diretta
+  sulla tabella `reports` — ma quella tabella ha la sua sicurezza a livello di riga (RLS) attiva e,
+  per il ruolo anonimo, non concede alcuna lettura. Il controllo risultava quindi sempre "non
+  trovata" e ogni upload falliva con `403 — new row violates row-level security policy`, non solo
+  occasionalmente.
+- La verifica ora passa da una funzione dedicata che esegue con i permessi del proprietario
+  (bypassando la RLS di `reports`, come già avviene per il controllo dei blocchi dispositivo),
+  mantenendo lo stesso vincolo di sicurezza: l'upload resta accettato solo dentro una segnalazione
+  reale aperta nelle ultime 24 ore.
+- Corretto anche lo scroll della finestra "Dettaglio segnalazione": con una descrizione lunga o più
+  note di lavorazione il contenuto veniva tagliato senza modo di vederlo. Ora l'intera finestra
+  scorre e il riquadro di testo calcola l'altezza in modo prevedibile invece di affidarsi al
+  ridimensionamento automatico (inaffidabile prima che il componente sia disegnato una prima volta).
+
+### `desktop` — Due difetti di layout: aggiornamento e nuova segnalazione (task 869f33v9g, 869f498a3)
+
+- La finestra "Aggiornamento disponibile" / "Aggiornamento obbligatorio" si apriva molto più alta
+  del previsto, occupando lo schermo dall'alto e lasciando i pulsanti **Scarica e installa** /
+  **Salta versione** (o **Aggiorna ora** / **Esci**) fuori dai bordi visibili: restava solo la ✕.
+- **Causa trovata**: le note di rilascio erano un blocco di testo HTML a larghezza fissa. Quando lo
+  schermo è impostato su un ingrandimento superiore al 100% (in Windows 11 il 125% è il valore
+  predefinito su molti portatili), Swing disegna quel blocco più largo di quanto dichiarato: il
+  testo va a capo più spesso, l'altezza richiesta cresce e la finestra veniva dimensionata su
+  quell'altezza, arrivando a superare lo schermo. Il limite che avrebbe dovuto contenere il
+  riquadro agiva solo sul disegno, non sul calcolo delle dimensioni della finestra. Più lungo era
+  l'elenco delle note della versione, peggiore l'effetto — per questo non si presentava sempre.
+- Le note di rilascio ora vanno a capo sulla larghezza reale del riquadro (niente più larghezze
+  fisse) e il riquadro ha un'altezza massima propria, oltre la quale le note scorrono. Di
+  conseguenza la finestra ha un'altezza prevedibile qualunque sia la lunghezza del changelog.
+- In più, come rete di sicurezza per ogni finestra modale dell'app: l'altezza viene comunque
+  limitata allo spazio utile dello schermo (barra delle applicazioni esclusa), il contenuto
+  eccedente diventa scorrimento invece di spingere i pulsanti fuori, la finestra non viene più
+  ristretta sotto la larghezza che i suoi pulsanti richiedono e l'apertura è centrata sullo schermo.
+- Nel form "Apri una segnalazione" **Titolo** e **Tipologia di richiesta** erano affiancati sulla
+  stessa riga: il campo titolo restava sotto la larghezza minima che richiede e il menu tipologia,
+  alto quanto il suo testo, appariva un terzo del campo accanto. Ora sono su due righe separate, a
+  piena larghezza e con la propria etichetta; la finestra è stata alzata di conseguenza. Corretto
+  anche il sottotitolo della schermata, che veniva troncato con i puntini.
+
+### `webplatform` — Changelog del sito: perché una voce nuova non appare subito (task 869f34rxx)
+
+- **Sì, serve un deploy**: la pagina `/changelog` del sito legge un file statico incluso nella
+  build di Netlify (`public/CHANGELOG.md`), non il database. Aggiungere una voce qui, nel changelog
+  dell'app, non tocca quel file: il sito (`LKS-WebPlatform`) è un **repository separato** da questo,
+  e la build di Netlify non ha accesso a questo `CHANGELOG.md`.
+- **Come si pubblica una voce sul sito**, lavorando nel repository `LKS-WebPlatform`:
+  1. `npm run sync:changelog` — copia questo changelog in `public/CHANGELOG.md`;
+  2. commit e push di `public/CHANGELOG.md`;
+  3. il push avvia da solo il deploy su Netlify, che rigenera la pagina `/changelog`.
+- Il procedimento è annotato qui, nel changelog, perché è questo il file che si ha davanti nel
+  momento in cui ci si pone la domanda.
+
+---
+
+## [4.9.1] — 2026-09-14
+
+Certificato della rete locale firmato da una CA dell'installazione, codice di registrazione
+persistente e WatchTower nascosto a chi ha il piano Free.
+
+### `desktop` — l'avviso del certificato non torna più a ogni cambio di rete
+
+- **Il computer crea una propria autorità di certificazione**, una volta sola, e con quella firma
+  il certificato del server locale. Sul pannello compare **"Certificato LAN"**: salvi il file, lo
+  installi sul telefono o sul tablet una volta sola e da lì in poi quel dispositivo apre la WebApp
+  senza più nessun avviso.
+- **Il punto non è il primo avviso, è il suo ritorno.** Prima il certificato veniva rifatto ogni
+  volta che cambiava l'indirizzo della rete (rete nuova, router riacceso, indirizzo diverso
+  assegnato dal modem): l'eccezione accettata sul telefono smetteva di valere e l'avviso tornava,
+  senza che si capisse perché. Ora a cambiare è solo il certificato del server, mentre l'autorità
+  resta la stessa: chi l'ha installata non se ne accorge nemmeno.
+- **Chi non installa niente non perde nulla**: avviso al primo accesso, esattamente come prima, e
+  traffico cifrato in entrambi i casi.
+- L'autorità è **limitata per costruzione** a `localhost`, ai nomi di rete domestica e agli
+  indirizzi privati: non può firmare per nessun sito di Internet, nemmeno se il file venisse
+  sottratto dal computer.
+- L'aggiornamento non chiede nulla: al primo avvio il vecchio certificato viene sostituito da solo.
+
+### `desktop` — il codice di registrazione non cambia più a ogni avvio
+
+- Il codice a sei caratteri **resta lo stesso** fra un avvio e l'altro. Prima ne veniva generato
+  uno nuovo a ogni riavvio dell'applicazione, e chi stava aggiungendo più persone si ritrovava il
+  codice appena dettato non più valido.
+- Accanto al codice c'è ora **"Rigenera"**: serve quando il codice è arrivato a qualcuno che non
+  doveva averlo. Da quel momento il vecchio non funziona più; gli account già creati non sono
+  toccati.
+
+### `desktop` / `webapp` — WatchTower non compare più con il piano Free
+
+- Con un piano Free la scheda **WatchTower** non appare più nelle impostazioni della WebApp: era
+  visibile e, soprattutto, **funzionante**, mentre tutto il resto della funzione richiedeva il
+  piano Essential.
+- La preferenza in questione decide se l'applicazione può collegarsi a un servizio esterno per
+  controllare le password violate: non doveva essere raggiungibile senza il piano che la include.
+- La pagina WatchTower resta visibile e continua a spiegare cosa sblocca l'aggiornamento del piano.
+
+---
+
+## [4.9.0] — 2026-09-13
+
+WatchTower, strumenti di sviluppo per i dati demo e nuova plancia del Tool-CLI (2.4.1).
+
+### `tool-cli` — plancia al posto della griglia, con i blocchi letti da Supabase
+
+- **Colonna di navigazione permanente**: le sei operazioni non spariscono più quando ne apri una.
+  Sono raggruppate per scopo (Sblocco · Release · Chiavi) invece che per numero d'ordine, così
+  passare dalla validazione di un lock alla generazione dello sblocco — due passi dello stesso
+  lavoro — non richiede più di tornare indietro. "Genera chiavi" ha un colore diverso dalle altre
+  perché non è la stessa cosa: una nuova coppia rende non verificabili le release già firmate.
+- **La schermata iniziale mostra lo stato invece di un menù**: quale keystore è collegato e con
+  quali impronte Ed25519, quali dispositivi risultano bloccati, quali unlock sono stati emessi di
+  recente. Prima metà finestra era vuota e l'unica informazione era "keystore connesso", che non
+  diceva né quale keystore né quali chiavi.
+- **Blocchi letti da Supabase** (`lock_events`, sola lettura) con la chiave `service_role` presa da
+  `.env`. Sola lettura per scelta: risolvere un blocco è compito della DesktopApp quando applica un
+  `unlock.lks` valido, e duplicare quella logica qui vorrebbe dire poter dichiarare sbloccato un
+  dispositivo che non lo è. Senza configurazione o senza rete la tabella spiega perché è vuota,
+  invece di restare vuota e basta.
+- **Icone ridisegnate**: erano costruite su coordinate intere ricavate da `size / 4`, e a 16 px le
+  loro suddivisioni cadevano a 1 o a 0 — chiave e chiave-con-più diventavano la stessa macchia, e
+  il riquadro con raggio fisso a 12 su un lato di 16 si arrotondava fino a sembrare un cerchio.
+  Ora ogni glifo è definito una volta su una griglia 24×24 e scalato, con spessore del tratto e
+  raggio proporzionati alla dimensione. Nella colonna i glifi sono nudi: un quadratino con bordo
+  accanto a una voce di menu sembra un pulsante minuscolo, non un'icona.
+- **Corretto un click che non funzionava**: in Swing gli eventi del mouse non risalgono al
+  genitore, quindi un click sull'etichetta di testo di una voce — cioè il punto che chiunque mira
+  — finiva sulla `JLabel` e moriva lì. L'ascoltatore viene ora registrato su tutti i discendenti.
+- **Il registro `output/audit.log` finalmente si legge**: esisteva già ma non lo apriva nessuno.
+- `Theme.RoundedPanel` ora si può ricolorare a runtime (serve all'evidenziazione della colonna) e
+  l'impronta delle chiavi è passata in `Fingerprints`, condivisa fra plancia e "Mostra chiavi".
+- Versione del tool allineata a **2.4.0** fra `pom.xml` e titolo della finestra.
+
+### `desktop` — strumenti di sviluppo: dati demo iniettabili e rimovibili
+
+- **Due pulsanti sul pannello host**, "Dati demo" e "Rimuovi demo", che popolano il vault e lo
+  ripuliscono. Pochi utenti e molti dati a testa: 4 utenti finti, e per **ogni** account — finti e
+  reali — 8 categorie, 28 credenziali, 7 cartelle annidate su 3 livelli e 14 file, di cui 3
+  archivi `.lkszip` che sono veri ZIP con dentro delle entry, cosi' anche l'estrazione ha qualcosa
+  da estrarre.
+- **Generazione per proprietario, non a caso**: le credenziali di un account stanno nelle sue
+  categorie e i suoi file nelle sue cartelle. Mescolarli produrrebbe stati che l'applicazione da
+  sola non potrebbe mai creare, e che quindi non ha senso provare.
+- **Copertura completa di WatchTower**: ogni account riceve almeno una credenziale per ciascuna
+  categoria — debole, critica, riutilizzata, vecchia, scaduta, in scadenza vicina e lontana, sito
+  in `http://` — perché una categoria vuota è una parte di interfaccia che non si vede mai. Le
+  compromesse usano password certamente presenti negli archivi pubblici di violazioni e si
+  accendono appena si attiva la verifica facoltativa.
+- **Non esistono nella build distribuita**: i pulsanti non vengono costruiti a meno che l'app non
+  sia avviata con `-Dlks.devTools=true` o `LKS_DEV_TOOLS=true`. Non è una funzione nascosta, è una
+  funzione assente — scrivere dati finti in un vault reale non è qualcosa che un utente debba
+  poter fare per sbaglio.
+- **Registro degli id in `cfg/demo.lks`** al posto del marcatore `[TEST]` nei nomi. Il marcatore
+  funzionava ma rendeva ogni schermata sgradevole da leggere; ora i nomi sono puliti e la traccia
+  di cosa è stato generato vive fuori dai dati. Sta in `cfg` e non in `data` perché non è
+  contenuto del vault. Contiene solo identificativi: chi lo legge sa **quali** righe sono finte,
+  non cosa contengono.
+  Il rovescio della medaglia, che va saputo: cancellando quel file i dati generati restano ma non
+  sono più rimovibili col pulsante. La rimozione continua comunque a riconoscere il vecchio
+  marcatore, così un vault popolato prima dell'aggiornamento si ripulisce lo stesso.
+- **Categorie senza doppioni**: ogni account prende una fetta di nomi riservata, invece di
+  ricevere tutti la stessa lista — cinque "Social" identiche, una per utente, sembravano un errore
+  del generatore. Portate a 4 di credenziali e 2 di documenti per account.
+- Gli oggetti generati portano la descrizione "Generato per la demo", che si legge aprendoli e non
+  invade gli elenchi.
+- **L'account del proprietario** (quello con la stessa email di `activationEmail`) riceve dati
+  demo di sua proprietà — altrimenti entrando con le proprie credenziali si troverebbero
+  schermate vuote — ma non viene mai modificato né cancellato, nemmeno se gli venisse scritto il
+  marcatore nel nome.
+- Le password generate sono volutamente eterogenee (deboli, riutilizzate, robuste, scadenze
+  passate e vicine, qualche sito in `http://`), così WatchTower ha qualcosa di realistico da
+  mostrare invece di un punteggio pieno.
+- Test di andata e ritorno: dopo iniezione + rimozione il vault torna identico, blob su disco
+  compresi, e le credenziali vere restano decifrabili con lo stesso contenuto.
 
 ### `desktop` + `webapp` — WatchTower: dashboard di sicurezza dell'account (task 869f0tcka)
 

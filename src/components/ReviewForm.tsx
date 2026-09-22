@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { submitReview } from "@/lib/reviews";
+import { APP_VERSION_LABEL } from "@/lib/version";
 
 /** Card della dashboard: l'utente lascia una recensione di una versione (1..5 stelle). */
 export function ReviewForm({ versions, defaultVersion }: { versions: string[]; defaultVersion?: string }) {
@@ -80,7 +81,7 @@ export function ReviewForm({ versions, defaultVersion }: { versions: string[]; d
               ))}
             </select>
           ) : (
-            <Input value={version} onChange={(e) => setVersion(e.target.value)} placeholder="es. v4.3.4" />
+            <Input value={version} onChange={(e) => setVersion(e.target.value)} placeholder={`es. ${APP_VERSION_LABEL}`} />
           )}
         </div>
         <div className="flex flex-col gap-1.5">

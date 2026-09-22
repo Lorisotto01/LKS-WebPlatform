@@ -9,3 +9,9 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/**
+ * Versione dell'ultima release, iniettata da Vite leggendo il CHANGELOG (v4.9.3).
+ * Non usarla direttamente: passa da `@/lib/version`.
+ */
+declare const __APP_VERSION__: string;
