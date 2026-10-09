@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     let emailed = false;
 
     if (resendKey) {
-      const lockLabel = uf.lock_type === "perm" ? "PERMANENT_LOCK" : "ENV_LOCK";
+      const lockLabel = uf.lock_type === "security" || uf.lock_type === "perm" ? "SECURITY_LOCK" : "INTEGRITY_LOCK";
       const html = `
         <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111">
           <h2>Il tuo file di sblocco è pronto</h2>

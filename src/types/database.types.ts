@@ -80,12 +80,12 @@ export interface Database {
       };
       lock_events: {
         Row: {
-          id: string; hwid: string; email: string | null; lock_type: "env" | "perm";
+          id: string; hwid: string; email: string | null; lock_type: "integrity" | "security";
           app_version: string | null; client_event_id: string | null; occurred_at: string;
           resolved: boolean; resolved_at: string | null; created_at: string;
         };
         Insert: {
-          id?: string; hwid: string; email?: string | null; lock_type: "env" | "perm";
+          id?: string; hwid: string; email?: string | null; lock_type: "integrity" | "security";
           app_version?: string | null; client_event_id?: string | null; occurred_at?: string;
           resolved?: boolean; resolved_at?: string | null;
         };

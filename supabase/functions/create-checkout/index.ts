@@ -30,7 +30,8 @@ interface Body {
   kind: "subscription" | "lock";
   planCode?: PlanCode;
   billingCycle?: "month" | "year";
-  lockType?: "env" | "perm";
+  /** "integrity" | "security"; accetta ancora "env" | "perm" dalle DesktopApp 4.x. */
+  lockType?: string;
   provider?: "stripe" | "paypal";
   hwid?: string;        // per gli sblocchi LOCK (dispositivo)
   recurring?: boolean;  // abbonamento con rinnovo automatico
@@ -87,8 +88,12 @@ Deno.serve(async (req) => {
       if (body.billingCycle !== "month" && body.billingCycle !== "year") {
         return json({ error: "invalid_cycle", message: "Periodicità di fatturazione non valida." }, 400);
       }
-    } else if (body.lockType !== "env" && body.lockType !== "perm") {
-      return json({ error: "invalid_lock_type", message: "Tipo di sblocco non valido." }, 400);
+    } else {
+      const lt = body.lockType === "env" ? "integrity" : body.lockType === "perm" ? "security" : body.lockType;
+      if (lt !== "integrity" && lt !== "security") {
+        return json({ error: "invalid_lock_type", message: "Tipo di sblocco non valido." }, 400);
+      }
+      body.lockType = lt;
     }
 
     // 2) Provider: whitelist stretta PRIMA di qualunque altra cosa (C1).
@@ -136,7 +141,7 @@ Deno.serve(async (req) => {
         kind: body.kind,
         planCode: body.planCode,
         billingCycle: body.billingCycle,
-        lockType: body.lockType,
+        lockType: body.lockType as "integrity" | "security" | undefined,
         currentPlan,
       });
     } catch (e) {

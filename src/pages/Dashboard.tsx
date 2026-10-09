@@ -21,6 +21,7 @@ type Order = Database["public"]["Tables"]["orders"]["Row"];
 type UnlockFile = Database["public"]["Tables"]["unlock_files"]["Row"];
 type Subscription = Database["public"]["Tables"]["subscriptions"]["Row"];
 import { getPlan, fmtEuro, type PlanCode } from "@/lib/plans";
+import { lockLabel, normalizeLockType } from "@/lib/locks";
 import { effectiveOrderStatus, releaseDownloadUrl, type OrderStatus } from "@/lib/checkout";
 
 const dateIT = (v: string | number | Date) =>
@@ -609,7 +610,7 @@ const ORDER_BADGE: Record<OrderStatus, { label: string; className: string }> = {
 function retryHref(o: Order): string {
   return o.kind === "subscription"
     ? `/checkout?plan=${o.plan_code ?? "essential"}&cycle=${o.billing_cycle ?? "year"}`
-    : `/checkout?lock=${o.lock_type ?? "env"}${o.hwid ? `&hwid=${encodeURIComponent(o.hwid)}` : ""}`;
+    : `/checkout?lock=${normalizeLockType(o.lock_type) ?? "integrity"}${o.hwid ? `&hwid=${encodeURIComponent(o.hwid)}` : ""}`;
 }
 
 function MyOrders({ orders, unlocks, onChanged }: { orders: Order[]; unlocks: Record<string, UnlockFile>; onChanged: () => void }) {
@@ -617,7 +618,7 @@ function MyOrders({ orders, unlocks, onChanged }: { orders: Order[]; unlocks: Re
   const desc = (o: Order) =>
     o.kind === "subscription"
       ? `${o.plan_code ?? ""} · ${o.billing_cycle === "year" ? "annuale" : "mensile"}`
-      : o.lock_type === "perm" ? "PERMANENT_LOCK" : "ENV_LOCK";
+      : lockLabel(o.lock_type);
 
   // Il job di scadenza gira ogni 5 minuti: questo tick fa passare da solo a
   // rosso un ordine che scade mentre la dashboard è aperta.
@@ -667,7 +668,7 @@ function MyOrders({ orders, unlocks, onChanged }: { orders: Order[]; unlocks: Re
                     {o.kind === "subscription" ? <Repeat className="h-4 w-4" /> : <KeyRound className="h-4 w-4" />}
                   </span>
                   <div className="min-w-0 flex-1">
-                    {/* break-all: `PERMANENT_LOCK` è una parola sola più larga
+                    {/* break-all: `INTEGRITY_LOCK` è una parola sola più larga
                         della colonna a 260px. */}
                     <p className="break-all font-medium">{desc(o)}</p>
                     <p className="break-words text-xs text-muted-foreground">

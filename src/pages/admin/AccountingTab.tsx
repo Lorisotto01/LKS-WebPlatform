@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { getPlan, fmtEuro, PLANS } from "@/lib/plans";
+import { lockLabel, normalizeLockType, type LockType } from "@/lib/locks";
 import { effectiveOrderStatus } from "@/lib/checkout";
 import type { Database } from "@/types/database.types";
 
@@ -17,7 +18,7 @@ interface LockEvent {
   id: string;
   hwid: string;
   email: string | null;
-  lock_type: "env" | "perm";
+  lock_type: LockType;
   app_version: string | null;
   occurred_at: string;
   resolved: boolean;
@@ -257,7 +258,7 @@ const STATUS_TONE: Record<string, string> = { paid: "#10B981", pending: "#F59E0B
 function eur(cents: number) { return fmtEuro(Number((cents / 100).toFixed(2))); }
 function orderDesc(o: Order): string {
   if (o.kind === "subscription") return `${o.plan_code ?? ""} · ${o.billing_cycle === "year" ? "annuale" : "mensile"}${o.is_recurring ? " · auto" : ""}`;
-  return o.lock_type === "perm" ? "PERMANENT_LOCK" : "ENV_LOCK";
+  return lockLabel(o.lock_type);
 }
 
 function OrdersHistory() {
@@ -355,7 +356,7 @@ function UnlockManager() {
       return { key: `lk-${l.id}`, hwid: l.hwid, email: l.email ?? undefined, lockType: l.lock_type, when: l.occurred_at, order: l.hwid ? paidOrderByHwid[l.hwid] : undefined };
     }),
     ...orders.filter((o) => !o.hwid || !seenHwid.has(o.hwid)).map((o) => ({
-      key: `ord-${o.id}`, hwid: o.hwid ?? undefined, email: o.email, lockType: (o.lock_type ?? "perm") as "env" | "perm", when: o.created_at, order: o,
+      key: `ord-${o.id}`, hwid: o.hwid ?? undefined, email: o.email, lockType: normalizeLockType(o.lock_type) ?? "security", when: o.created_at, order: o,
     })),
   ];
 
@@ -403,7 +404,7 @@ function UnlockManager() {
           const rowBusy = order ? busy === order.id : false;
           return (
             <div key={r.key} className="flex flex-wrap items-center gap-3 rounded-lg border bg-card/50 px-4 py-3 text-sm">
-              <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-semibold text-warning">{r.lockType === "perm" ? "PERMANENT" : "ENV"}</span>
+              <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-semibold text-warning">{r.lockType === "security" ? "SECURITY" : "INTEGRITY"}</span>
               <span className="max-w-[160px] truncate" title={r.email}>{r.email ?? "—"}</span>
               <span className="font-mono text-xs text-muted-foreground" title="HWID del dispositivo">HWID: {r.hwid ?? "—"}</span>
               <span className="text-xs text-muted-foreground" title="Momento del blocco">{new Date(r.when).toLocaleString()}</span>

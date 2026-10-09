@@ -31,13 +31,13 @@ export interface PlanFeature {
 }
 
 export interface LockPricing {
-  /** Prezzo ENV_LOCK già scontato (€). */
-  envLock: number;
-  /** Prezzo PERMANENT_LOCK già scontato (€). */
-  permLock: number;
+  /** Prezzo INTEGRITY_LOCK già scontato (€). */
+  integrityLock: number;
+  /** Prezzo SECURITY_LOCK già scontato (€). */
+  securityLock: number;
   /** Sconto % rispetto al prezzo pieno (piano Free), per messaggi marketing. */
-  envDiscountPct: number;
-  permDiscountPct: number;
+  integrityDiscountPct: number;
+  securityDiscountPct: number;
 }
 
 export interface Plan {
@@ -56,14 +56,14 @@ export interface Plan {
 }
 
 /** Prezzi pieni dei LOCK (piano Free) — base per il calcolo degli sconti. */
-const LOCK_FULL = { envLock: 120, permLock: 100 };
+const LOCK_FULL = { integrityLock: 120, securityLock: 100 };
 
-function lock(envLock: number, permLock: number): LockPricing {
+function lock(integrityLock: number, securityLock: number): LockPricing {
   return {
-    envLock,
-    permLock,
-    envDiscountPct: Math.round((1 - envLock / LOCK_FULL.envLock) * 100),
-    permDiscountPct: Math.round((1 - permLock / LOCK_FULL.permLock) * 100),
+    integrityLock,
+    securityLock,
+    integrityDiscountPct: Math.round((1 - integrityLock / LOCK_FULL.integrityLock) * 100),
+    securityDiscountPct: Math.round((1 - securityLock / LOCK_FULL.securityLock) * 100),
   };
 }
 
