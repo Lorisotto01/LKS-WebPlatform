@@ -30,7 +30,7 @@ export async function computePrice(
     kind: "subscription" | "lock";
     planCode?: PlanCode;        // subscription
     billingCycle?: "month" | "year";
-    lockType?: "env" | "perm";  // lock
+    lockType?: "integrity" | "security";  // lock (già normalizzato da create-checkout)
     currentPlan: PlanCode;      // piano attuale dell'utente (per il prezzo LOCK)
   },
 ): Promise<PriceResult> {
@@ -47,8 +47,8 @@ export async function computePrice(
   } else {
     // Il prezzo del LOCK dipende dal piano ATTUALE dell'utente.
     const p = plans.find((x: any) => x.code === opts.currentPlan) ?? plans.find((x: any) => x.code === "free");
-    baseCents = opts.lockType === "perm" ? p.perm_lock_cents : p.env_lock_cents;
-    label = opts.lockType === "perm" ? "Sblocco PERMANENT_LOCK" : "Sblocco ENV_LOCK";
+    baseCents = opts.lockType === "security" ? p.security_lock_cents : p.integrity_lock_cents;
+    label = opts.lockType === "security" ? "Sblocco SECURITY_LOCK" : "Sblocco INTEGRITY_LOCK";
   }
 
   // Sconto a tempo applicabile (il migliore).

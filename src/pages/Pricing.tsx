@@ -66,10 +66,10 @@ export function Pricing() {
           <div>
              <Link
             to="/sicurezza#tipi-di-blocco"
-            title="Cosa sono ENV_LOCK e PERMANENT_LOCK?"
+            title="Cosa sono INTEGRITY_LOCK e SECURITY_LOCK?"
             className="mt-8 inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            <HelpCircle className="h-3.5 w-3.5 text-primary" /> Cosa sono i blocchi ENV_LOCK / PERMANENT_LOCK?
+            <HelpCircle className="h-3.5 w-3.5 text-primary" /> Cosa sono i blocchi INTEGRITY_LOCK / SECURITY_LOCK?
           </Link>
           </div>
          
@@ -221,12 +221,12 @@ function PlanCard({ plan, cycle, discount }: { plan: Plan; cycle: Cycle; discoun
           </Link>
         </p>
         <div className="mt-2 flex justify-between">
-          <span>ENV_LOCK</span>
-          <span className="font-mono">{fmtEuro(plan.lock.envLock)}</span>
+          <span>INTEGRITY_LOCK</span>
+          <span className="font-mono">{fmtEuro(plan.lock.integrityLock)}</span>
         </div>
         <div className="mt-0.5 flex justify-between">
-          <span>PERMANENT_LOCK</span>
-          <span className="font-mono">{fmtEuro(plan.lock.permLock)}</span>
+          <span>SECURITY_LOCK</span>
+          <span className="font-mono">{fmtEuro(plan.lock.securityLock)}</span>
         </div>
       </div>
     </div>
@@ -242,8 +242,8 @@ function LockTable() {
           Prima di tutto la cosa importante: il <span className="text-foreground">vault e i suoi dati
           restano sempre al sicuro e intatti</span>. Il blocco è una misura di sicurezza
           anti-bruteforce, non una perdita di dati. In caso di{" "}
-          <span className="font-mono text-warning">ENV_LOCK</span> o{" "}
-          <span className="font-mono text-destructive">PERMANENT_LOCK</span> lo sblocco firmato ha un
+          <span className="font-mono text-warning">INTEGRITY_LOCK</span> o{" "}
+          <span className="font-mono text-destructive">SECURITY_LOCK</span> lo sblocco firmato ha un
           costo una tantum che si riduce con il tuo piano.{" "}
           <Link to="/sicurezza#tipi-di-blocco" className="font-medium text-primary hover:underline">
             Scopri come funzionano i blocchi
@@ -256,8 +256,8 @@ function LockTable() {
           <thead>
             <tr className="border-b border-border/60 text-muted-foreground">
               <th className="px-4 py-3 text-left font-medium">Piano</th>
-              <th className="px-4 py-3 text-right font-medium">ENV_LOCK</th>
-              <th className="px-4 py-3 text-right font-medium">PERMANENT_LOCK</th>
+              <th className="px-4 py-3 text-right font-medium">INTEGRITY_LOCK</th>
+              <th className="px-4 py-3 text-right font-medium">SECURITY_LOCK</th>
             </tr>
           </thead>
           <tbody>
@@ -265,18 +265,18 @@ function LockTable() {
               <tr key={p.code} className="border-b border-border/40 last:border-0">
                 <td className="px-4 py-3 font-medium">{p.name}</td>
                 <td className="px-4 py-3 text-right">
-                  <span className="font-mono">{fmtEuro(p.lock.envLock)}</span>
-                  {p.lock.envDiscountPct > 0 && (
+                  <span className="font-mono">{fmtEuro(p.lock.integrityLock)}</span>
+                  {p.lock.integrityDiscountPct > 0 && (
                     <span className="ml-2 rounded-full bg-success/15 px-1.5 py-0.5 text-[10px] font-semibold text-success">
-                      −{p.lock.envDiscountPct}%
+                      −{p.lock.integrityDiscountPct}%
                     </span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <span className="font-mono">{fmtEuro(p.lock.permLock)}</span>
-                  {p.lock.permDiscountPct > 0 && (
+                  <span className="font-mono">{fmtEuro(p.lock.securityLock)}</span>
+                  {p.lock.securityDiscountPct > 0 && (
                     <span className="ml-2 rounded-full bg-success/15 px-1.5 py-0.5 text-[10px] font-semibold text-success">
-                      −{p.lock.permDiscountPct}%
+                      −{p.lock.securityDiscountPct}%
                     </span>
                   )}
                 </td>

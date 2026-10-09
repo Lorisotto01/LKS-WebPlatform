@@ -8,6 +8,7 @@ import { Navbar } from "@/components/Navbar";
 import { useSeo } from "@/lib/seo";
 import { getDocSettings, getPublicDocBlocks, type DocBlock } from "@/lib/docs";
 import type { DocSettings } from "@/types/database.types";
+import { safeHref } from "@/lib/safeHref";
 
 // Mappa nome icona (stringa salvata nei blocchi title) -> componente lucide.
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -33,7 +34,8 @@ function renderInline(text: string): ReactNode[] {
     else if (tok.startsWith("`")) out.push(<code key={i} className="rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]">{tok.slice(1, -1)}</code>);
     else {
       const mm = /\[([^\]]+)\]\(([^)]+)\)/.exec(tok)!;
-      out.push(<a key={i} href={mm[2]} className="text-primary hover:underline">{mm[1]}</a>);
+      const href = safeHref(mm[2]);
+      out.push(href ? <a key={i} href={href} className="text-primary hover:underline">{mm[1]}</a> : <span key={i}>{mm[1]}</span>);
     }
     last = m.index + tok.length; i++;
   }

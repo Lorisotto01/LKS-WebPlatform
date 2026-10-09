@@ -26,17 +26,37 @@ const FAQS: Faq[] = [
     a: "No, ed è una scelta di sicurezza precisa. Tutto (vault, password, file) viaggia solo sulla tua rete locale: da fuori rete non è raggiungibile nulla. Questo elimina l'intera categoria di attacchi da Internet. Internet viene usato solo per scaricare l'app e gestire la licenza, mai per i contenuti del vault.",
   },
   {
+    q: "Il collegamento tra il PC e il telefono è cifrato?",
+    a: "Di default no: la Web App viaggia in HTTP, così basta digitare l'indirizzo e funziona subito. Su una rete di casa protetta e con persone di fiducia è sufficiente. In ufficio, su reti condivise o con ospiti, attiva l'HTTPS dal pannello dell'app: il traffico viene cifrato e su ogni dispositivo installi una sola volta il certificato della rete locale.",
+  },
+  {
+    q: "Chi può vedere i miei dati?",
+    a: "Dall'app, solo tu e le persone con cui condividi qualcosa. Il computer che ospita SecureLocalShare però custodisce i dati di tutti, cifrati con la master password di chi lo gestisce: quella persona potrebbe tecnicamente accedervi, e un virus su quel PC metterebbe a rischio i dati di tutti. Per questo l'app è pensata per famiglie e piccoli team che si fidano di chi gestisce l'host.",
+    render: (
+      <>
+        Dall'app, solo tu e le persone con cui condividi qualcosa. Il computer che ospita SecureLocalShare però
+        custodisce i dati di tutti, cifrati con la master password di chi lo gestisce: quella persona potrebbe
+        tecnicamente accedervi, e un virus su quel PC metterebbe a rischio i dati di tutti. Per questo l'app è
+        pensata per famiglie e piccoli team che si fidano di chi gestisce l'host.{" "}
+        <Link to="/sicurezza#modello-di-fiducia" className="font-medium text-primary hover:underline">
+          Cosa protegge e cosa no
+        </Link>
+        .
+      </>
+    ),
+  },
+  {
     q: "Se dimentico la master password perdo tutto?",
     a: "La master password non viene mai trasmessa né salvata da noi: non è recuperabile in alcun modo. È la chiave che cifra il tuo vault, quindi senza di essa il vault non è apribile. Conservala con cura (ad esempio in un posto fisico sicuro): è il prezzo della privacy totale, perché nessuno tranne te può accedere ai tuoi dati.",
   },
   {
-    q: "Cosa succede se sbaglio troppe volte la master password (PERMANENT_LOCK)?",
-    a: "Il blocco è progressivo: i primi errori si riassorbono da soli e al 3° tentativo scatta solo un blocco temporaneo di 10 minuti. Dopo 10 tentativi falliti scatta il PERMANENT_LOCK, pensato per fermare gli attacchi a forza bruta. In quel caso serve un file unlock.lks firmato dall'autore per sbloccare il dispositivo. Fondamentale: il vault e i tuoi dati restano sempre intatti, non vengono cancellati — al termine dello sblocco ti verranno chieste la master password attuale (necessaria per riavvolgere il vault) e una nuova.",
+    q: "Cosa succede se sbaglio troppe volte la master password (SECURITY_LOCK)?",
+    a: "Il blocco è progressivo: i primi errori si riassorbono da soli e al 3° tentativo scatta solo un blocco temporaneo di 10 minuti. Dopo 10 tentativi falliti scatta il SECURITY_LOCK, pensato per fermare gli attacchi a forza bruta. In quel caso serve un file unlock.lks firmato dall'autore per sbloccare il dispositivo. Fondamentale: il vault e i tuoi dati restano sempre intatti, non vengono cancellati — al termine dello sblocco ti verranno chieste la master password attuale (necessaria per riavvolgere il vault) e una nuova.",
     render: (
       <>
         Il blocco è progressivo: i primi errori si riassorbono da soli e al 3° tentativo scatta solo un
         blocco temporaneo di 10 minuti. Dopo 10 tentativi falliti scatta il{" "}
-        <span className="font-mono text-destructive">PERMANENT_LOCK</span>, pensato per fermare gli
+        <span className="font-mono text-destructive">SECURITY_LOCK</span>, pensato per fermare gli
         attacchi a forza bruta. In quel caso serve un file <code>unlock.lks</code> firmato dall'autore
         per sbloccare il dispositivo. Fondamentale: il vault e i tuoi dati restano sempre intatti, non
         vengono cancellati — al termine ti verranno chieste la master password attuale (necessaria per
@@ -84,7 +104,7 @@ export function Faq() {
   useSeo({
     title: "FAQ — SecureLocalShare | Domande frequenti",
     description:
-      "Risposte alle domande più comuni su SecureLocalShare: accesso da fuori casa, PC spento, master password dimenticata, blocchi di sicurezza PERMANENT_LOCK, prezzi e crittografia.",
+      "Risposte alle domande più comuni su SecureLocalShare: accesso da fuori casa, PC spento, master password dimenticata, blocchi di sicurezza SECURITY_LOCK, prezzi e crittografia.",
     path: "/faq",
   });
 

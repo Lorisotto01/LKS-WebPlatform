@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { User, Mail, MapPin, Link2, Sparkles } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { getAuthorProfile } from "@/lib/profile";
+import { safeHref } from "@/lib/safeHref";
 import { useSeo } from "@/lib/seo";
 import type { AuthorProfile } from "@/types/database.types";
 
@@ -105,7 +106,7 @@ export function ChiSono() {
                 )}
                 {profile?.location && <ContactRow icon={MapPin} label="Località" value={profile.location} />}
                 {(profile?.contacts ?? []).map((c, i) => (
-                  <ContactRow key={i} icon={Link2} label={c.label} value={c.value} href={c.href} />
+                  <ContactRow key={i} icon={Link2} label={c.label} value={c.value} href={safeHref(c.href)} />
                 ))}
                 {!profile?.email &&
                   !profile?.location &&

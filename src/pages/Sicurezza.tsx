@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   ShieldCheck, Lock, KeyRound, WifiOff, ServerOff, EyeOff, Fingerprint,
-  ShieldAlert, Ban, Timer, FileWarning, Globe, ArrowRight,
+  ShieldAlert, Ban, Timer, FileWarning, Globe, ArrowRight, Users,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { useSeo } from "@/lib/seo";
@@ -11,7 +11,7 @@ export function Sicurezza() {
   useSeo({
     title: "Sicurezza — SecureLocalShare | Crittografia AES-256 e zero cloud",
     description:
-      "Come SecureLocalShare protegge le tue password: cifratura AES-256-GCM, chiave derivata in locale (PBKDF2 310k), licenza legata all'HWID e blocchi anti-bruteforce ENV_LOCK / PERMANENT_LOCK.",
+      "Come SecureLocalShare protegge le tue password: cifratura AES-256-GCM, chiave derivata in locale (PBKDF2 310k), licenza legata all'HWID e blocchi anti-bruteforce INTEGRITY_LOCK / SECURITY_LOCK.",
     path: "/sicurezza",
   });
   const { hash } = useLocation();
@@ -91,14 +91,14 @@ export function Sicurezza() {
           </p>
 
           <div className="mt-6 grid gap-5 lg:grid-cols-2">
-            {/* ENV_LOCK */}
+            {/* INTEGRITY_LOCK */}
             <div className="rounded-2xl border border-warning/30 bg-warning/5 p-6 shadow-card">
               <div className="flex items-center gap-2">
                 <span className="grid h-10 w-10 place-items-center rounded-lg bg-warning/15 text-warning">
                   <FileWarning className="h-5 w-5" />
                 </span>
                 <div>
-                  <h3 className="font-mono text-sm font-bold text-warning">ENV_LOCK</h3>
+                  <h3 className="font-mono text-sm font-bold text-warning">INTEGRITY_LOCK</h3>
                   <p className="text-xs text-muted-foreground">Manomissione dell'ambiente</p>
                 </div>
               </div>
@@ -126,14 +126,14 @@ export function Sicurezza() {
               </Dl>
             </div>
 
-            {/* PERMANENT_LOCK */}
+            {/* SECURITY_LOCK */}
             <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 shadow-card">
               <div className="flex items-center gap-2">
                 <span className="grid h-10 w-10 place-items-center rounded-lg bg-destructive/15 text-destructive">
                   <Ban className="h-5 w-5" />
                 </span>
                 <div>
-                  <h3 className="font-mono text-sm font-bold text-destructive">PERMANENT_LOCK</h3>
+                  <h3 className="font-mono text-sm font-bold text-destructive">SECURITY_LOCK</h3>
                   <p className="text-xs text-muted-foreground">Tentativi esauriti</p>
                 </div>
               </div>
@@ -180,24 +180,64 @@ export function Sicurezza() {
               L'app mostra un avviso esplicito: <strong>è rimasto un solo tentativo</strong> prima del blocco
               permanente.
             </Flow>
-            <Flow n="4" tone="danger" title="10° tentativo fallito → PERMANENT_LOCK">
+            <Flow n="4" tone="danger" title="10° tentativo fallito → SECURITY_LOCK">
               Blocco permanente del dispositivo. Sbloccabile esclusivamente con un <code>unlock.lks</code> firmato
               dall'autore, che <strong className="text-primary">conserva i dati</strong> (richiede la master password
               attuale e una nuova).
             </Flow>
-            <Flow n="!" tone="warn" title="Manomissione environment.lks → ENV_LOCK (in qualsiasi momento)">
+            <Flow n="!" tone="warn" title="Manomissione environment.lks → INTEGRITY_LOCK (in qualsiasi momento)">
               Indipendente dal contatore: se l'ambiente viene alterato, il blocco scatta subito. Recuperabile dal
               proprietario con la master password (gratis, ma <strong>azzera tutti i dati</strong>) oppure con un{" "}
               <code>unlock.lks</code> dell'autore, che <strong className="text-primary">conserva i dati</strong>.
             </Flow>
           </ol>
           <div className="mt-5 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm text-muted-foreground">
-            Le procedure passo-passo per risolvere ENV_LOCK e PERMANENT_LOCK sono spiegate nella{" "}
+            Le procedure passo-passo per risolvere INTEGRITY_LOCK e SECURITY_LOCK sono spiegate nella{" "}
             <Link to="/docs" className="font-medium text-primary hover:underline">
               documentazione
             </Link>
             , nella sezione “Aggiornamenti, blocco e attivazione”.
           </div>
+        </div>
+
+        {/* Modello di fiducia (v5.0.0) */}
+        <div className="mt-16" id="modello-di-fiducia">
+          <SectionHeading icon={Users} title="Cosa protegge, e di chi ti devi fidare" />
+          <p className="mt-3 text-muted-foreground">
+            SecureLocalShare è un archivio condiviso che vive su <strong>un computer di casa o dell'ufficio</strong> e
+            si usa da tutti i dispositivi della stessa rete. Questa architettura ha punti di forza netti e alcuni
+            limiti che è giusto conoscere prima di usarla.
+          </p>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-5">
+              <h3 className="font-semibold text-primary">Ti protegge da</h3>
+              <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
+                <li>chi è <strong>fuori dalla tua rete</strong>: da Internet non è raggiungibile nulla;</li>
+                <li>chi è in rete ma <strong>non ha un account</strong>: serve il codice di registrazione e i tentativi di accesso sono limitati;</li>
+                <li>gli <strong>altri utenti</strong>: ognuno vede solo i propri dati e ciò che gli è stato condiviso;</li>
+                <li>il <strong>furto del computer o del disco</strong>: tutto è cifrato con AES-256;</li>
+                <li>la <strong>manomissione</strong> della configurazione e gli aggiornamenti contraffatti.</li>
+              </ul>
+            </div>
+            <div className="rounded-xl border border-warning/30 bg-warning/5 p-5">
+              <h3 className="font-semibold text-warning">Richiede fiducia in</h3>
+              <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
+                <li>
+                  <strong>chi gestisce il computer host</strong>: i dati di tutti sono cifrati con la sua master password, quindi
+                  tecnicamente potrebbe accedervi. Un virus su quel PC metterebbe a rischio i dati di tutti;
+                </li>
+                <li>
+                  <strong>la tua rete</strong>: di default il collegamento con telefoni e tablet è HTTP. Su reti condivise o in
+                  ufficio attiva l'<strong>HTTPS</strong> dal pannello dell'app e installa una volta il certificato su ogni dispositivo;
+                </li>
+                <li>i <strong>dispositivi</strong> da cui accedi: un telefono compromesso espone i dati del suo utente.</li>
+              </ul>
+            </div>
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            È pensato per <strong>famiglie, studi e piccoli team</strong> che si fidano di chi gestisce l'host. Se gli utenti
+            non devono fidarsi l'uno dell'altro, ognuno dovrebbe usare la propria installazione.
+          </p>
         </div>
 
         {/* Richieste internet */}
@@ -209,7 +249,7 @@ export function Sicurezza() {
           </p>
           <ul className="mt-6 space-y-3">
             <Net title="Registrazione e accesso al sito" detail="Crea l'account e autentica l'utente (Supabase Auth) per poter scaricare l'app. Avviene solo sul sito, non dal vault." />
-            <Net title="Download dell'eseguibile" detail="Genera un link firmato temporaneo (valido 10 minuti) per scaricare l'app dallo storage. Nessun file del vault è coinvolto." />
+            <Net title="Download dell'eseguibile" detail="Genera un link firmato temporaneo (valido 5 minuti) per scaricare l'app dallo storage. Nessun file del vault è coinvolto." />
             <Net title="Attivazione del dispositivo" detail="Al primo avvio l'app lega l'HWID al token di attivazione (bind_activation). Serve a impedire la duplicazione della licenza su più PC." />
             <Net title="Validazione della licenza" detail="Verifica che la licenza sia attiva e legata a questo hardware (validate_license). Conferma solo lo stato, non trasmette credenziali." />
             <Net title="Controllo aggiornamenti" detail="Confronta la versione installata con l'ultima pubblicata per proporre (o imporre) l'update. Legge solo i metadati di release." />
