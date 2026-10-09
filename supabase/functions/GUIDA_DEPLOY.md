@@ -32,6 +32,7 @@ uno alla volta e in ordine:
 - `supabase/migrations/0018_v450_recurring_unlocks.sql`
 - `supabase/migrations/0019_v460_lock_events.sql`  ⬅️ crea `lock_events` + RPC `report_lock`/`active_lock_type`/`resolve_locks`
 - `supabase/migrations/0020_v461_report_lock_text_ts.sql`  ⬅️ robustezza di `report_lock` (obbligatoria)
+- `supabase/migrations/0009_v500_lock_rename.sql`  ⬅️ **v5.0.0** (schema attuale 0001-0009): ENV/PERMANENT → INTEGRITY/SECURITY_LOCK. Eseguirla **prima** del deploy delle functions 5.0 (`create-checkout` legge `integrity_lock_cents`/`security_lock_cents`).
 
 > ⚠️ **Importante:** senza 0019 + 0020 la DesktopApp non riesce a scrivere i blocchi: gli eventi
 > restano in `cfg/lock_queue.json` sul PC e la RPC `report_lock` risponde **404** (funzione non

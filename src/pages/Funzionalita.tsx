@@ -68,7 +68,7 @@ const FEATURES: FeatureDef[] = [
     badge: "Sicurezza",
     title: "Licenza legata al dispositivo e blocco anti-intrusione",
     body: "L'attivazione lega la licenza all'hardware del PC. Un sistema di blocco progressivo protegge dai tentativi a forza bruta e dalle manomissioni, con procedure di sblocco dedicate.",
-    points: ["Attivazione legata all'HWID", "Blocco progressivo (ENV_LOCK / PERMANENT_LOCK)", "Master password mai trasmessa"],
+    points: ["Attivazione legata all'HWID", "Blocco progressivo (INTEGRITY_LOCK / SECURITY_LOCK)", "Master password mai trasmessa"],
     mock: "security",
   },
   {

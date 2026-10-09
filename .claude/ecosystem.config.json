@@ -1,0 +1,53 @@
+{
+  "_comment": "Versione compilata per SecureLocalShare, salvata come .claude/ecosystem.config.json nella root di 'SecureLocalShare/App/v2.0' e nella root del repo 'LKS-WebPlatform'. clickupListId verificato via API (spazio 'Project', lista 'Secure Local Share').",
+
+  "project": {
+    "domain": "SottoLab",
+    "name": "secure-local-share",
+    "clickupListId": "901218063901"
+  },
+
+  "repos": {
+    "app": {
+      "remote": "https://github.com/Lorisotto01/SecureLocalShare.git",
+      "contains": ["DesktopApp", "Web App"],
+      "notes": "Repo principale: host Swing + backend REST embedded (Java 21, Spring Boot 3.5.7) e la SPA LAN servita dall'host (React/Vite). Nessun database SQL: persistenza 100% file .lks cifrati AES-256-GCM."
+    },
+    "webplatform": {
+      "remote": "https://github.com/Lorisotto01/LKS-WebPlatform.git",
+      "contains": ["Web Platform"],
+      "notes": "Repo separato: sito pubblico di distribuzione (React+Vite), con un progetto Supabase proprio (diverso da quello 'core' di SottoLab). Deploy del CODICE automatico su Netlify a ogni git push su questo repo — indipendente dal rilascio di una nuova release .exe.",
+      "changelogSync": "Web Platform/public/CHANGELOG.md deve essere aggiornato manualmente a ogni bump versione, copiandolo dal CHANGELOG.md del repo 'app': lo script scripts/sync-changelog.mjs funziona in automatico solo in locale (dove le due cartelle sono annidate), non sul build Netlify (repo isolato)."
+    },
+    "toolCli": {
+      "remote": null,
+      "contains": ["Tool-CLI/lks-unlock-tool"],
+      "notes": "MAI in git (.gitignore totale, mai committato in nessun repo). Contiene le chiavi private Ed25519 (unlock + release signing) in keys/. Claude non deve MAI eseguirlo, leggerne le chiavi, né automatizzarne l'uso in alcun modo: firma release e generazione unlock.lks restano azioni manuali dell'autore, per sua scelta esplicita."
+    }
+  },
+
+  "database": {
+    "engine": "postgres",
+    "provider": "supabase",
+    "target": "webplatform",
+    "notes": "L'unico database di tutto l'ecosistema SecureLocalShare è il progetto Supabase del repo 'webplatform' (tabelle registrations, downloads, releases, discounts, orders, subscriptions, unlock_files, activations, lock_events, reports, report_attachments, contenuti /docs — vedi Web Platform/supabase/migrations/0001..0006). La DesktopApp non ha DB. Nessun backup automatizzato esiste oggi per questo progetto Supabase (a differenza di quello 'core' di SottoLab, che ha già .github/workflows/backup-notturno.yml)."
+  },
+
+  "deploy": {
+    "type": "secure-local-share-custom",
+    "packagingTool": "launch4j",
+    "notes": "Build Maven + packaging Launch4j automatizzabili da Claude su richiesta. Firma Ed25519 (Tool-CLI, manuale) e pubblicazione (pannello /admin della WebPlatform, manuale) restano sempre a carico dell'utente — vedi skills/deploy/SKILL.md. Nessuna firma Authenticode/SmartScreen è oggi in uso: non è nella pipeline."
+  },
+
+  "taskLinking": {
+    "branchPattern": "(?:^|/)task-(?<taskId>[0-9a-z]+)-",
+    "commitPattern": "\\[(?<taskId>[0-9a-z]+)\\]",
+    "notes": "Confermato dal git log reale: branch come 'task-869f13awr-modifications-...' o 'claude/task-869f13awr-modifications-...', e ID task fra parentesi quadre nei commit di rilascio, es. 'v4.8.2 [869f13awr] Analisi Vulnerabilità...'."
+  },
+
+  "taskWorkflow": {
+    "statuses": ["pianificazione", "pronto alla lavorazione", "bloccata", "lavorazione", "testing", "terminata", "archiviata"],
+    "cycle": ["pronto alla lavorazione", "lavorazione", "testing", "terminata"],
+    "notes": "Stati reali verificati via API sulla lista ClickUp. Il ciclo che la skill task-comment segue è pronto alla lavorazione -> lavorazione -> testing -> terminata (confermato dall'utente): 'testing' = Claude testa davvero il codice (build/esecuzione), il collaudo manuale finale lo fa sempre l'utente. 'terminata' solo dopo sua conferma esplicita. In caso di problemi si apre un nuovo task di risoluzione collegato, non si retrocede quello esistente. 'pianificazione' e 'archiviata' sono fuori dal ciclo di questa skill (il primo è lo stato di clickup-task-creator, il secondo una chiusura manuale)."
+  }
+}

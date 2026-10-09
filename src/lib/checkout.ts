@@ -1,11 +1,12 @@
 import { supabase } from "./supabase";
 import type { PlanCode } from "./plans";
+import type { LockType } from "./locks";
 
 export interface CheckoutInput {
   kind: "subscription" | "lock";
   planCode?: PlanCode;
   billingCycle?: "month" | "year";
-  lockType?: "env" | "perm";
+  lockType?: LockType;
   provider?: "stripe" | "paypal";
   hwid?: string;
   recurring?: boolean;

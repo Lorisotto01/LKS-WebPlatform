@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/toast";
 import { Navbar } from "@/components/Navbar";
 import { getPlan, fmtEuro, type PlanCode } from "@/lib/plans";
 import { startCheckout } from "@/lib/checkout";
+import { lockLabel, normalizeLockType } from "@/lib/locks";
 
 interface Discount { id: string; label: string; percent: number; applies_to: string; plan_code: string | null }
 
@@ -16,7 +17,8 @@ export function Checkout() {
   const navigate = useNavigate();
   const toast = useToast();
 
-  const lockParam = params.get("lock"); // "env" | "perm"
+  // "integrity" | "security" (anche "env" | "perm" dai link delle DesktopApp 4.x)
+  const lockParam = normalizeLockType(params.get("lock"));
   const planParam = (params.get("plan") ?? "essential").toLowerCase() as PlanCode;
   const cycle = (params.get("cycle") === "month" ? "month" : "year") as "month" | "year";
   const kind: "subscription" | "lock" = lockParam ? "lock" : "subscription";
@@ -40,9 +42,9 @@ export function Checkout() {
   const summary = useMemo(() => {
     if (kind === "lock") {
       const p = getPlan(currentPlan);
-      const isPerm = lockParam === "perm";
-      const base = isPerm ? p.lock.permLock : p.lock.envLock;
-      return { name: isPerm ? "Sblocco PERMANENT_LOCK" : "Sblocco ENV_LOCK", base, scope: "lock" as const };
+      const isSecurity = lockParam === "security";
+      const base = isSecurity ? p.lock.securityLock : p.lock.integrityLock;
+      return { name: `Sblocco ${lockLabel(lockParam)}`, base, scope: "lock" as const };
     }
     const p = getPlan(planParam);
     const base = cycle === "year" ? p.priceYear : p.priceMonth;
@@ -69,7 +71,7 @@ export function Checkout() {
         kind,
         planCode: kind === "subscription" ? planParam : undefined,
         billingCycle: kind === "subscription" ? cycle : undefined,
-        lockType: kind === "lock" ? (lockParam as "env" | "perm") : undefined,
+        lockType: kind === "lock" ? (lockParam ?? undefined) : undefined,
         hwid: kind === "lock" ? (hwid.trim() || undefined) : undefined,
         recurring: kind === "subscription" ? recurring : undefined,
         provider,

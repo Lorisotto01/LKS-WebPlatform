@@ -91,8 +91,8 @@ insert into public.doc_blocks (position, type, content) values
 
   (180, 'title',     '{"text":"9. Aggiornamenti, blocco e attivazione","icon":"RefreshCw"}'::jsonb),
   (190, 'paragraph', '{"text":"L''app controlla da sé le nuove versioni e ti guida nell''installarle. Ogni PC host va attivato una volta col codice della dashboard. In caso di manomissioni o troppi tentativi falliti l''app può bloccarsi: esistono due tipi di blocco."}'::jsonb),
-  (200, 'warning',   '{"text":"ENV_LOCK (manomissione di environment.lks): il proprietario ripristina con la master password — che per sicurezza azzera le credenziali — oppure applicando un unlock.lks firmato dall''autore."}'::jsonb),
-  (210, 'warning',   '{"text":"PERMANENT_LOCK (10 tentativi falliti): sblocco solo con un unlock.lks firmato dall''autore, verificato per firma, hardware ID e scadenza."}'::jsonb),
+  (200, 'warning',   '{"text":"INTEGRITY_LOCK (manomissione di environment.lks): il proprietario ripristina con la master password — che per sicurezza azzera le credenziali — oppure applicando un unlock.lks firmato dall''autore."}'::jsonb),
+  (210, 'warning',   '{"text":"SECURITY_LOCK (10 tentativi falliti): sblocco solo con un unlock.lks firmato dall''autore, verificato per firma, hardware ID e scadenza."}'::jsonb),
 
   (220, 'title',     '{"text":"10. Problemi comuni (FAQ)","icon":"HelpCircle"}'::jsonb),
   (230, 'list',      '{"ordered":false,"items":["Web App irraggiungibile dal telefono: stessa rete, app avviata, firewall sulla porta 9505.","Master password dimenticata: non è recuperabile per scelta di sicurezza.","Windows segnala l''app come non riconosciuta: è normale per un''app nuova, procedi con Esegui comunque.","Uso fuori casa: per progetto funziona solo nella rete locale del PC host."]}'::jsonb),
