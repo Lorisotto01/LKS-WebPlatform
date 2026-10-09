@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
+
+// Il client Supabase si carica in modo asincrono: così non entra nel bundle iniziale della landing
+// (le pagine che lo importano direttamente sono già caricate in lazy da App.tsx).
+const loadSupabase = () => import("@/lib/supabase").then((m) => m.supabase);
 
 interface AuthState {
   session: Session | null;
@@ -18,15 +21,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+    loadSupabase().then((supabase) => {
+      if (cancelled) return;
+      supabase.auth.getSession().then(({ data }) => {
+        if (cancelled) return;
+        setSession(data.session);
+        setLoading(false);
+      });
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+      unsubscribe = () => sub.subscription.unsubscribe();
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, []);
 
-  const signOut = async () => { await supabase.auth.signOut(); };
+  const signOut = async () => { await (await loadSupabase()).auth.signOut(); };
 
   const user = session?.user ?? null;
   const isAdmin = (user?.app_metadata?.role as string | undefined) === "admin";

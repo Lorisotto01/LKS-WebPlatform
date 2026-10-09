@@ -24,4 +24,4 @@ Disallow: /dashboard
 Disallow: /admin
 Disallow: /checkout
 
-Sitemap: https://securelocalshare.netlify.app/sitemap.xml
+Sitemap: https://securelocalshare.sottolab.it/sitemap.xml

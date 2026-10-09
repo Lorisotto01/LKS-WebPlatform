@@ -168,7 +168,7 @@ function PlanCard({ plan, cycle, discount }: { plan: Plan; cycle: Cycle; discoun
       )}
 
       <div className="flex items-baseline justify-between">
-        <h3 className="text-lg font-bold tracking-tight">{plan.name}</h3>
+        <h2 className="text-lg font-bold tracking-tight">{plan.name}</h2>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">{plan.tagline}</p>
 

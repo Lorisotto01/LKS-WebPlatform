@@ -266,7 +266,7 @@ function Dl({ children }: { children: React.ReactNode }) {
   return <dl className="mt-4 space-y-2 text-sm">{children}</dl>;
 }
 function Dt({ children }: { children: React.ReactNode }) {
-  return <dt className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">{children}</dt>;
+  return <dt className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{children}</dt>;
 }
 function Dd({ children }: { children: React.ReactNode }) {
   return <dd className="text-muted-foreground">{children}</dd>;

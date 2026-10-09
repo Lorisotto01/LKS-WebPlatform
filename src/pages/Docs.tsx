@@ -5,6 +5,7 @@ import {
   FolderSync, Bell, Lock, RefreshCw, Download, HelpCircle, Wifi, Info, AlertTriangle,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { useSeo } from "@/lib/seo";
 import { getDocSettings, getPublicDocBlocks, type DocBlock } from "@/lib/docs";
 import type { DocSettings } from "@/types/database.types";
 
@@ -43,6 +44,12 @@ function renderInline(text: string): ReactNode[] {
 const str = (v: unknown, fb = ""): string => (typeof v === "string" ? v : fb);
 
 export function Docs() {
+  useSeo({
+    title: "Documentazione — SecureLocalShare",
+    description:
+      "Guida all'installazione e all'uso di SecureLocalShare: server LAN sul PC di casa, Web App, vault cifrati e LocalDrop.",
+    path: "/docs",
+  });
   const [settings, setSettings] = useState<DocSettings | null>(null);
   const [blocks, setBlocks] = useState<DocBlock[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +73,11 @@ export function Docs() {
           <span className="text-xs font-semibold uppercase tracking-wider">Documentazione</span>
         </div>
         <h1 className="mt-2 text-3xl font-extrabold tracking-tight">{settings?.page_title ?? "Documentazione"}</h1>
-        {settings?.page_subtitle && <p className="mt-2 text-muted-foreground">{settings.page_subtitle}</p>}
+        {loading ? (
+          <div className="mt-2 h-6 w-2/3 animate-pulse rounded bg-card/70" />
+        ) : (
+          settings?.page_subtitle && <p className="mt-2 text-muted-foreground">{settings.page_subtitle}</p>
+        )}
 
         {loading ? (
           <div className="mt-8 space-y-3">
@@ -80,7 +91,7 @@ export function Docs() {
           <>
             {showIndex && titles.length > 0 && (
               <nav className="mt-6 rounded-xl border bg-card/40 p-4 text-sm">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">Indice</p>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Indice</p>
                 <ol className="flex flex-col gap-1.5">
                   {titles.map((t) => (
                     <li key={t.id}>
@@ -99,11 +110,14 @@ export function Docs() {
           </>
         )}
 
-        <div className="mt-10 rounded-lg border border-border/60 bg-card/40 p-5 text-sm text-muted-foreground">
-          Pronto a iniziare?{" "}
-          <Link to="/register" className="font-medium text-primary hover:underline">Crea un account</Link>{" "}
-          e scarica l'ultima versione dalla dashboard.
-        </div>
+        {/* Solo a contenuto caricato: sotto gli scheletri verrebbe spinto giù all'arrivo dei blocchi (CLS) */}
+        {!loading && (
+          <div className="mt-10 rounded-lg border border-border/60 bg-card/40 p-5 text-sm text-muted-foreground">
+            Pronto a iniziare?{" "}
+            <Link to="/register" className="font-medium text-primary hover:underline">Crea un account</Link>{" "}
+            e scarica l'ultima versione dalla dashboard.
+          </div>
+        )}
       </main>
     </div>
   );

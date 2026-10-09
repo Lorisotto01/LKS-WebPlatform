@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import {
   History, Search, ChevronDown, ListTree, X, Monitor, Globe, Cloud, Server,
   Terminal, BookOpen, Circle, Sparkles, CalendarDays, Hammer,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { useSeo } from "@/lib/seo";
 import {
   MODULES, moduleMeta, parseChangelog, formatChangelogDate,
   type ChangelogVersion, type ModuleId, type ModuleMeta,
@@ -160,7 +161,16 @@ function ModuleIcon({ meta, className }: { meta: ModuleMeta; className?: string 
  * Pagina
  * ------------------------------------------------------------------ */
 
+// useLayoutEffect nel browser; nel prerender (Node) non fa nulla e React avviserebbe, quindi useEffect.
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 export function Changelog() {
+  useSeo({
+    title: "Changelog — SecureLocalShare",
+    description:
+      "Novità, miglioramenti e correzioni di ogni versione di SecureLocalShare: app desktop, Web App e sito.",
+    path: "/changelog",
+  });
   const location = useLocation();
   const [md, setMd] = useState<string | null>(null);
   const [error, setError] = useState(false);
@@ -234,8 +244,10 @@ export function Changelog() {
   }, []);
 
   // Prima apertura: espandi la versione richiesta nell'hash, altrimenti la più recente.
+  // Layout effect: l'espansione avviene prima del paint. Con un effect normale la lista veniva
+  // disegnata chiusa e poi si apriva, spingendo giù le versioni successive (CLS ~0,14 su mobile).
   const applied = useRef(false);
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!parsed || applied.current || parsed.versions.length === 0) return;
     applied.current = true;
     const hash = decodeURIComponent(location.hash.replace(/^#/, ""));
@@ -402,7 +414,7 @@ export function Changelog() {
                 </button>
 
                 <div className={`${indexOpen ? "mt-2 block" : "hidden"} lg:mt-0 lg:block`}>
-                  <p className="hidden items-center gap-2 px-1 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 lg:flex">
+                  <p className="hidden items-center gap-2 px-1 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:flex">
                     <ListTree className="h-3.5 w-3.5 shrink-0" /> Indice versioni
                   </p>
                   <nav

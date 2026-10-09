@@ -1,35 +1,44 @@
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect, type ComponentType } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
-import { isSupabaseConfigured } from "./lib/supabase";
+import { isSupabaseConfigured } from "./lib/supabaseEnv";
 import { Home } from "./pages/Home";
-import { Register } from "./pages/Register";
-import { VerifyEmail } from "./pages/VerifyEmail";
-import { Login } from "./pages/Login";
-import { ForgotPassword } from "./pages/ForgotPassword";
-import { ResetPassword } from "./pages/ResetPassword";
-import { Dashboard } from "./pages/Dashboard";
-import { AdminLayout } from "./pages/admin/AdminLayout";
-import { ReleaseTab } from "./pages/admin/ReleaseTab";
-import { ReportsTab } from "./pages/admin/ReportsTab";
-import { DocsManagerTab } from "./pages/admin/DocsManagerTab";
-import { AnalyticsTab } from "./pages/admin/AnalyticsTab";
-import { AccountingTab } from "./pages/admin/AccountingTab";
 import { SetupRequired } from "./pages/SetupRequired";
-import { Privacy } from "./pages/Privacy";
-import { Terms } from "./pages/Terms";
-import { Docs } from "./pages/Docs";
-import { Changelog } from "./pages/Changelog";
-import { ChiSono } from "./pages/ChiSono";
-import { Funzionalita } from "./pages/Funzionalita";
-import { Sicurezza } from "./pages/Sicurezza";
-import { Recensioni } from "./pages/Recensioni";
-import { Faq } from "./pages/Faq";
-import { Pricing } from "./pages/Pricing";
-import { Checkout } from "./pages/Checkout";
-import { CheckoutResult } from "./pages/CheckoutResult";
-import { CheckoutSimulate } from "./pages/CheckoutSimulate";
+
+/**
+ * Code splitting: solo la Home (pagina d'ingresso) sta nel bundle iniziale, le altre pagine
+ * vengono scaricate quando servono. Le pagine esportano componenti con nome, da qui l'helper.
+ */
+function lazyPage<M, K extends keyof M>(load: () => Promise<M>, name: K) {
+  return lazy(() => load().then((m) => ({ default: m[name] as ComponentType })));
+}
+
+const Register = lazyPage(() => import("./pages/Register"), "Register");
+const VerifyEmail = lazyPage(() => import("./pages/VerifyEmail"), "VerifyEmail");
+const Login = lazyPage(() => import("./pages/Login"), "Login");
+const ForgotPassword = lazyPage(() => import("./pages/ForgotPassword"), "ForgotPassword");
+const ResetPassword = lazyPage(() => import("./pages/ResetPassword"), "ResetPassword");
+const Dashboard = lazyPage(() => import("./pages/Dashboard"), "Dashboard");
+const AdminLayout = lazyPage(() => import("./pages/admin/AdminLayout"), "AdminLayout");
+const ReleaseTab = lazyPage(() => import("./pages/admin/ReleaseTab"), "ReleaseTab");
+const ReportsTab = lazyPage(() => import("./pages/admin/ReportsTab"), "ReportsTab");
+const DocsManagerTab = lazyPage(() => import("./pages/admin/DocsManagerTab"), "DocsManagerTab");
+const AnalyticsTab = lazyPage(() => import("./pages/admin/AnalyticsTab"), "AnalyticsTab");
+const AccountingTab = lazyPage(() => import("./pages/admin/AccountingTab"), "AccountingTab");
+const Privacy = lazyPage(() => import("./pages/Privacy"), "Privacy");
+const Terms = lazyPage(() => import("./pages/Terms"), "Terms");
+const Docs = lazyPage(() => import("./pages/Docs"), "Docs");
+const Changelog = lazyPage(() => import("./pages/Changelog"), "Changelog");
+const ChiSono = lazyPage(() => import("./pages/ChiSono"), "ChiSono");
+const Funzionalita = lazyPage(() => import("./pages/Funzionalita"), "Funzionalita");
+const Sicurezza = lazyPage(() => import("./pages/Sicurezza"), "Sicurezza");
+const Recensioni = lazyPage(() => import("./pages/Recensioni"), "Recensioni");
+const Faq = lazyPage(() => import("./pages/Faq"), "Faq");
+const Pricing = lazyPage(() => import("./pages/Pricing"), "Pricing");
+const Checkout = lazyPage(() => import("./pages/Checkout"), "Checkout");
+const CheckoutResult = lazyPage(() => import("./pages/CheckoutResult"), "CheckoutResult");
+const CheckoutSimulate = lazyPage(() => import("./pages/CheckoutSimulate"), "CheckoutSimulate");
 
 // Ad ogni cambio di route (redirect inclusi) riporta la vista in cima alla pagina.
 function ScrollToTop() {
@@ -46,6 +55,8 @@ export default function App() {
   return (
     <>
       <ScrollToTop />
+      {/* Fallback vuoto a tutta altezza: il footer non salta su durante il caricamento della pagina */}
+      <Suspense fallback={<div className="min-h-screen" />}>
       <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/register" element={<Register />} />
@@ -86,6 +97,7 @@ export default function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </>
   );
 }

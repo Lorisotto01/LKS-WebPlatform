@@ -5,11 +5,14 @@
  * imperativamente <title>, la meta description, il canonical e i tag Open Graph /
  * Twitter Card sul mount della pagina. I default statici restano in index.html
  * (utili per i crawler che non eseguono JS); qui li sovrascriviamo per pagina.
+ *
+ * Nel prerender (scripts/prerender.mjs) gli effect non girano: l'hook registra allora i
+ * valori in `ssrSeo`, che lo script scrive direttamente nell'<head> dell'HTML statico.
  */
 import { useEffect } from "react";
 
 /** Origine pubblica del sito, per canonical e og:url assoluti. */
-export const SITE_URL = "https://securelocalshare.netlify.app";
+export const SITE_URL = "https://securelocalshare.sottolab.it";
 
 /** Immagine social di default (TODO: sostituire con una 1200x630 dedicata). */
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/icon-512.png`;
@@ -43,11 +46,15 @@ function setLink(rel: string, href: string) {
   el.setAttribute("href", href);
 }
 
+/** SEO raccolta durante il render lato server (prerender); null nel browser. */
+export const ssrSeo: { current: Required<SeoOptions> | null } = { current: null };
+
 /**
  * Applica title + meta description + canonical + OG/Twitter per la pagina corrente.
  * Chiamalo una volta nel corpo del componente pagina.
  */
 export function useSeo({ title, description, path = "/", image = DEFAULT_OG_IMAGE }: SeoOptions) {
+  if (typeof window === "undefined") ssrSeo.current = { title, description, path, image };
   useEffect(() => {
     const url = `${SITE_URL}${path}`;
 

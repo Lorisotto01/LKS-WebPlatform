@@ -13,7 +13,225 @@ Storico delle modifiche rilevanti del progetto, raggruppate per modulo:
 | **PATCH** | bugfix, allineamenti, rifiniture |
 
 Più interventi nella stessa sessione condividono la stessa versione, distinti per scope.
-Versione corrente: **4.9.3** (Tool-CLI: **2.4.1**).
+Versione corrente: **5.0.0** (Tool-CLI: **2.5.0**).
+
+---
+
+## [5.0.0] — 2026-10-07
+
+Versione major: i due blocchi cambiano nome ovunque — **ENV_LOCK diventa INTEGRITY_LOCK** e
+**PERMANENT_LOCK diventa SECURITY_LOCK** — anche nei codici salvati sul database, e per questo
+l'aggiornamento è **obbligatorio**. Insieme arrivano più categorie per credenziale e documento, l'icona
+del sito, il campo "Accesso eseguito con", una guida interattiva, la correzione dello sblocco che la
+DesktopApp rifiutava e le correzioni dell'analisi di sicurezza, con l'HTTPS in rete locale come opzione.
+Il sito di distribuzione diventa più veloce e accessibile: pagine pubbliche prerenderizzate, un terzo del
+codice da scaricare e, nel report Lighthouse mobile, Performance da 88 a 97–99 e tutte le altre categorie a 100.
+
+### `desktop` / `tool-cli` — lo sblocco veniva rifiutato con "Firma Ed25519 non valida" (task 869fbc7rd)
+
+- **La firma era valida, ma fatta con la chiave sbagliata.** Dalla 4.9.0 la DesktopApp verifica con la
+  chiave di `keys/4.9.0/`. Il Tool-CLI cercava invece una cartella con il nome *esatto* della versione
+  del `lock.lks`: per 4.9.1, 4.9.2 e 4.9.3 la cartella non esiste, quindi ripiegava sulla vecchia coppia
+  in `keys/` e firmava con quella.
+- Il controllo finale del tool non se ne accorgeva, perché verificava con la stessa coppia appena usata
+  per firmare. Valeva per entrambi i blocchi: il percorso di sblocco non distingue il motivo.
+- **Ora il tool sceglie la coppia la cui chiave pubblica coincide con quella dell'app.** Dalla 5.0 il
+  `lock.lks` contiene l'impronta di quella chiave (`unlockKeyId`). Per i lock delle versioni precedenti
+  la ricava dalla versione, con una tabella ricostruita dalla storia del progetto.
+- Se nessuna coppia installata coincide, il tool **rifiuta di firmare** invece di produrre un file che
+  l'app respingerebbe. Generazione e verifica mostrano l'impronta della chiave usata.
+- Quando la firma non torna, la DesktopApp ora spiega le cause possibili: chiave di un'altra versione
+  oppure file alterato.
+
+### `desktop` / `webapp` / `tool-cli` / `webplatform` — ENV_LOCK → INTEGRITY_LOCK, PERMANENT_LOCK → SECURITY_LOCK (task 869fbc80b)
+
+- **`desktop`**: nuovi nomi nel `lock.lks`, nella schermata di blocco (il titolo ora mostra il nome del
+  blocco), nell'avviso al 9° tentativo, nei log e nei messaggi dell'API. Lo stato salvato in
+  `environment.lks` cambia nome (`permanentLock` diventa `securityLock`), ma il vecchio nome viene
+  ancora letto: **un'installazione già bloccata resta bloccata** dopo l'aggiornamento.
+- **`webapp`**: la schermata "Sistema bloccato" indica quale dei due blocchi è attivo.
+- **`tool-cli`**: motivo del blocco, tabella dei dispositivi bloccati e storico degli unlock mostrano i
+  nomi nuovi, anche per i file e le righe scritti dalla 4.x.
+- **`webplatform`**: prezzi, FAQ, pagine Sicurezza e Funzionalità, checkout, area personale, email
+  "il tuo file di sblocco è pronto" e pannello di amministrazione usano i nomi nuovi.
+- **Database** (migrazione `0009_v500_lock_rename.sql`): i codici `env`/`perm` diventano
+  `integrity`/`security` su ordini, file di sblocco ed eventi di blocco. Le colonne dei prezzi diventano
+  `integrity_lock_cents`/`security_lock_cents` e la guida pubblicata viene aggiornata.
+- **Le DesktopApp 4.x restano funzionanti** finché non si aggiornano, perché un dispositivo bloccato
+  potrebbe non riuscire a farlo:
+  - il server accetta ancora i loro codici e continua a rispondere nel formato che si aspettano;
+  - i loro link di pagamento (`/checkout?lock=env|perm`) funzionano ancora.
+
+### `webapp` / `desktop` — più categorie per credenziale e documento (task 869fcy9c4)
+
+- Una **credenziale** può stare in più categorie. Nel modulo le categorie scelte compaiono come
+  etichette colorate rimovibili, e "Aggiungi un'altra categoria…" ne aggiunge altre.
+- Lo stesso vale per i **documenti del LocalDrop**: nel caricamento, nella nota di testo, in "Categoria
+  e cartella" e nella modifica di più file insieme.
+- I **campi personalizzati** di tutte le categorie scelte compaiono insieme, ognuno con il bordo del
+  colore della propria categoria. Se due campi hanno lo stesso nome, dopo il titolo compare la
+  categoria tra parentesi, per esempio "Codice (Lavoro)" e "Codice (Giochi)".
+- Liste e scheda mostrano un'etichetta per ogni categoria. Il filtro trova l'elemento se una qualsiasi
+  delle sue categorie corrisponde. Eliminando una categoria, gli elementi perdono solo quella.
+- I dati esistenti, con una sola categoria, vengono letti senza conversioni. Un archivio scritto dalla
+  5.0 resta leggibile da una 4.x, che vede la prima categoria.
+
+### `webapp` / `desktop` — dati sensibili sempre oscurati, sito web e icona (task 869fcytxw)
+
+- **L'occhio accanto al nome è stato tolto.** Apriva la scheda della credenziale con password e campi
+  segreti già in chiaro, e registrava nel log una visualizzazione anche se nessuno l'aveva chiesta.
+  Ora il nome apre la scheda con i dati sensibili **oscurati**: ognuno ha il proprio occhio, e la
+  password viene recuperata e registrata solo quando la mostri o la copi.
+- Nuovo campo **"Sito web"** nella credenziale (facoltativo, anche senza `https://`). La lista e la
+  scheda mostrano l'**icona della piattaforma** al posto dell'iniziale, e la scheda il link al sito.
+- **L'icona la scarica la DesktopApp direttamente dal sito**, una volta per dominio, e la conserva
+  cifrata insieme ai dati: nessun servizio di terzi vede quali siti hai salvato. Non vengono mai
+  contattati indirizzi della rete locale o del computer stesso, e si accettano solo immagini di
+  piccole dimensioni.
+
+### `webapp` / `desktop` — campo "Accesso eseguito con" (task 869fcyht8)
+
+- Nuovo tipo di campo personalizzato, al massimo uno per categoria: una tendina con logo e nome di 25
+  provider (Google, Apple, GitHub, Microsoft, Azure, Facebook, Discord, LinkedIn, Twitter, X, GitLab,
+  Bitbucket, Amazon, Yahoo, Twitch, Steam, Spotify, Reddit, Slack, Dropbox, TikTok, Nintendo,
+  PlayStation, Xbox, Epic Games).
+- Con un provider scelto **la password non è più obbligatoria**. In lista compare "Accesso con Google"
+  al posto dei pallini. Se si prova a vedere o copiare la password, un avviso indica con quale
+  account si accede.
+- I loghi arrivano dal sito di ciascun provider, con lo stesso meccanismo delle icone. Se l'host è
+  offline compare l'iniziale nel colore del brand.
+- WatchTower non conta più come "deboli" le credenziali che non hanno una password.
+- I **campi segreti** vengono ripuliti dagli spazi anche in lettura: anche i valori salvati in
+  precedenza si copiano puliti.
+
+### `webapp` — guida interattiva (task 869fba1zw)
+
+- Nuovo pulsante **«Guida»** in ogni sezione: nella barra laterale, nell'header su telefono e nel
+  modulo della credenziale. Avvia la **guida della pagina** o il **tour generale** dell'app.
+- Ogni passo porta in vista ed evidenzia l'elemento spiegato, con la scheda accanto. Si naviga anche
+  da tastiera (frecce, Invio, Esc).
+- Al **primo accesso** di ogni utente il tour generale parte da solo.
+
+### `desktop` — testi della configurazione iniziale allineati (task 869fcxt33)
+
+- Il passo "Non modificare la configurazione" diceva che con la master password si rientra senza
+  perdere dati. **Non è così**: il ripristino gratuito con la master password azzera tutti i dati.
+  Per conservarli serve un `unlock.lks` firmato.
+- Corretti anche gli altri passi superati:
+  - il backend è raggiungibile solo da questo computer, e in rete locale c'è solo la WebApp (non cifrata);
+  - il limite di LocalDrop dipende dal piano (5 / 10 / 20 GB, non più 1 GB);
+  - il blocco progressivo è descritto com'è davvero;
+  - Internet serve per l'attivazione e gli aggiornamenti;
+  - lo sblocco del SECURITY_LOCK si acquista anche dall'area personale.
+
+### `tool-cli` — la grafica non si adattava rimpicciolendo la finestra (task 869fbc7pk) — *v2.5.0*
+
+- Aperto su uno schermo largo e poi ristretto, con percorsi lunghi nei campi, le schede venivano
+  **tagliate a destra** invece di restringersi: sparivano il pulsante dell'operazione, il secondo campo
+  e il bordo dell'OUTPUT.
+- Ora tutte le schermate seguono la larghezza della finestra, come già faceva la Dashboard. A ogni
+  ridimensionamento la finestra viene anche ridisegnata, così non restano residui della schermata
+  precedente.
+- **I simboli ✔ ✘ ⚠ comparivano come □** nella console OUTPUT: il carattere Consolas non li contiene.
+  Ora il testo resta in Consolas, mentre i simboli sono disegnati con un carattere che li contiene e
+  colorati per significato: verde, rosso, ambra.
+- In modalità terminale, se la console di Windows non sa mostrare i simboli (codepage 850/1252),
+  vengono scritti come `[OK]`, `[X]`, `[!]` e `->` invece di `?`.
+
+### `desktop` / `webapp` / `webplatform` / `tool-cli` — analisi delle vulnerabilità e correzioni
+
+Analisi completa di tutte le app: scansione delle dipendenze (npm audit, database OSV), ricerca di
+segreti nella storia git e revisione del codice esposto in rete, dell'autenticazione, dei permessi,
+del database e delle funzioni del sito. Le correzioni della 4.8.2 risultano tutte ancora valide.
+
+- **HTTPS in rete locale, facoltativo.** Nel pannello c'è un nuovo interruttore **«HTTPS»**:
+  - spento (default), la WebApp resta in HTTP, immediata da aprire, adatta a reti di cui ti fidi;
+  - acceso, il traffico con telefoni e tablet è cifrato. Il pulsante **«Certificato LAN»** esporta
+    il certificato da installare una volta per dispositivo.
+
+  La scelta resta salvata, e l'indirizzo mostrato nel pannello passa da `http://` a `https://`.
+- **Una persona sola non può più bloccare il login a tutti.** Dietro il server della rete locale ogni
+  dispositivo arrivava all'app con lo stesso indirizzo. Così 5 password sbagliate, da chiunque,
+  bloccavano gli accessi di **tutti** per 15 minuti. Ora il limite vale per il singolo dispositivo.
+- **Il codice di registrazione non si può più indovinare a tentativi.**
+  - 5 codici errati bloccano quel dispositivo per 15 minuti;
+  - 30 errori da tutta la rete sospendono le registrazioni.
+- **Sessioni chiudibili davvero.**
+  - "Esci" invalida la sessione anche sull'host, non solo nel browser.
+  - **Cambiando la password** si chiudono tutte le sessioni aperte su ogni dispositivo.
+  - Un account eliminato perde subito l'accesso.
+- **Categorie altrui non assegnabili.** Credenziali e documenti accettano solo categorie del proprio
+  account.
+- **Protezione dal "DNS rebinding".** Il server della rete locale risponde solo agli indirizzi di
+  questo computer: localhost, i suoi IP e il suo nome di rete. Una pagina web ostile non può
+  fingersi la WebApp.
+- **Link della guida e del profilo autore del sito** limitati a indirizzi web, email e telefono:
+  un link `javascript:` non viene più reso cliccabile.
+- **Librerie aggiornate**:
+
+  | Modulo | Aggiornamenti |
+  |---|---|
+  | `desktop` | Spring Boot 3.5.16 (Spring 6.2.19), Tomcat 10.1.60, Jackson 2.21.7, Log4j 2.25.5, junrar 7.6.1, Bouncy Castle 1.86 |
+  | `tool-cli` | Jackson 2.21.7, Bouncy Castle 1.86 |
+  | `webapp` / `webplatform` | React Router 7.18, Vite 6.4 |
+
+  Le vulnerabilità note delle librerie Java passano da 76 a 2. Le due rimaste riguardano funzioni
+  che l'app non usa (`XsltView`, rendering a frammenti via SSE) e si chiudono solo con Spring 7.
+- **Rischi accettati, ora dichiarati**:
+  - nel wizard, il nuovo passo **"Chi custodisce i dati"**: il PC host conserva i dati di tutti,
+    quindi chi lo gestisce deve essere di fiducia;
+  - sul sito, la sezione **"Cosa protegge, e di chi ti devi fidare"** nella pagina Sicurezza e due
+    nuove FAQ (collegamento cifrato e chi può vedere i dati);
+  - corretta anche la durata del link di download indicata sul sito: 5 minuti, non 10.
+- Restano aperti solo avvisi sugli strumenti di build della WebApp, dovuti a Tailwind 3: non
+  finiscono nell'app distribuita e si chiudono con la migrazione a Tailwind 4.
+
+### `webplatform` — accessibilità, SEO e `llms.txt` (task 869fekgjj)
+
+- **Contrasto dei colori:** il viola e il rosso usati per i testi su sfondo scuro non raggiungevano il
+  rapporto minimo di 4,5:1. Ora `text-primary` e `text-destructive` usano varianti più chiare
+  (`--primary-text`, `--destructive-text`), mentre pulsanti e sfondi restano invariati. Tolte anche le
+  trasparenze che rendevano illeggibili etichette e numeri.
+- **Struttura delle pagine:** la home e "Chi sono" hanno il contenuto principale in `<main>`. In
+  "Funzionalità" e "Prezzi" i titoli non saltano più un livello. Il mockup dell'app nella home è segnato
+  come decorativo per gli screen reader, perché contiene dati finti.
+- **Dominio:** canonical, Open Graph, dati strutturati, `sitemap.xml` e `robots.txt` puntano a
+  `securelocalshare.sottolab.it` invece che a `securelocalshare.netlify.app`.
+- **SEO per pagina:** anche Documentazione, Changelog, Privacy e Termini hanno titolo, descrizione e
+  canonical propri. Prima ereditavano quelli della home e per Google risultavano dei duplicati.
+- **`/llms.txt`:** nuova pagina riassuntiva per gli assistenti AI, con i link alle sezioni del sito.
+- Gli indirizzi `/.well-known/*` rispondono 404 invece di restituire la pagina del sito.
+
+### `webplatform` — meno codice da scaricare e caratteri ospitati sul sito (task 869ff6g7p)
+
+- All'apertura si scaricano **75 kB di JavaScript compresso invece di 191 kB**. Le altre pagine si
+  caricano solo quando servono, e anche la libreria Supabase non rallenta più la comparsa della pagina.
+- Il carattere Inter è ospitato sul sito invece che su Google Fonts: due collegamenti esterni in meno e
+  nessun foglio di stile esterno che blocchi la visualizzazione.
+- Il sottotitolo della home compare subito, senza dissolvenza.
+- **Niente più contenuti che saltano durante il caricamento** in "Chi sono", Documentazione e Changelog:
+  prima i dati in arrivo spingevano giù il resto della pagina.
+
+### `webplatform` — pagine pubbliche prerenderizzate (task 869ff6g7x)
+
+- Home, Funzionalità, Sicurezza, Prezzi, FAQ, Recensioni, Chi sono, Documentazione, Changelog, Privacy
+  e Termini vengono **generate come HTML completo al momento del build** (`scripts/prerender.mjs`). Il
+  testo è visibile prima che arrivi il JavaScript, e i motori di ricerca leggono subito titolo e
+  descrizione giusti. Login, registrazione, area personale e amministrazione restano pagine
+  dell'applicazione (`app.html`).
+- Lo stile è incorporato nelle pagine, e i file JavaScript, che servono solo a rendere la pagina
+  interattiva, hanno priorità bassa.
+- I file in `/assets/` restano in cache per un anno (il nome cambia a ogni versione) e il favicon passa
+  da 53 kB a 7 kB.
+
+### Da sapere per l'aggiornamento
+
+- Va eseguita la migrazione `0009_v500_lock_rename.sql` **prima** di pubblicare le funzioni del sito
+  aggiornate. Poi va pubblicata la release 5.0.0 con `min_version = 5.0.0`, che rende obbligatorio
+  l'aggiornamento.
+- Il Tool-CLI 2.5.0 è necessario per firmare i lock scritti dalle DesktopApp 4.9.1 e successive.
+- Chi vuole l'HTTPS lo attiva dal pannello e installa il certificato sui dispositivi: chi non lo
+  attiva continua a usare `http://` come prima.
 
 ---
 

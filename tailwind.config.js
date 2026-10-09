@@ -16,6 +16,11 @@ export default {
         success: { DEFAULT: "hsl(var(--success))", foreground: "hsl(0 0% 100%)" },
         warning: { DEFAULT: "hsl(var(--warning))", foreground: "hsl(240 24% 8%)" }
       },
+      // text-primary / text-destructive puntano alle varianti schiarite (contrasto WCAG AA), vedi theme/index.css
+      textColor: {
+        primary: { DEFAULT: "hsl(var(--primary-text))", foreground: "hsl(var(--primary-foreground))" },
+        destructive: { DEFAULT: "hsl(var(--destructive-text))", foreground: "hsl(var(--destructive-foreground))" }
+      },
       borderRadius: { xl: "1rem", lg: "0.75rem", md: "0.5rem", sm: "0.375rem" },
       boxShadow: {
         glow: "0 18px 60px -18px hsl(248 90% 60% / 0.55)",

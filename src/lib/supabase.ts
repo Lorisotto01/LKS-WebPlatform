@@ -1,21 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
+import { isSupabaseConfigured, supabasePublicKey as publicKey, supabaseUrl as url } from "./supabaseEnv";
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-// Accept the modern "publishable" key (sb_publishable_...) or the legacy "anon" key.
-// Both are public, low-privilege keys and work identically with supabase-js.
-const publicKey =
-  (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined) ??
-  (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined);
-
-export const isSupabaseConfigured = Boolean(url && publicKey);
-
-if (!isSupabaseConfigured) {
-  console.error(
-    "[SecureLocalShare] Variabili d'ambiente Supabase mancanti: VITE_SUPABASE_URL e " +
-    "VITE_SUPABASE_PUBLISHABLE_KEY (o VITE_SUPABASE_ANON_KEY). Vedi .env.example."
-  );
-}
+export { isSupabaseConfigured };
 
 // Public key only (publishable/anon). La secret/service_role NON entra mai nel browser.
 export const supabase = createClient<Database>(

@@ -1,9 +1,16 @@
 import { ScrollText } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { useSeo } from "@/lib/seo";
 
 const UPDATED = "19 giugno 2026";
 
 export function Terms() {
+  useSeo({
+    title: "Termini e condizioni — SecureLocalShare",
+    description:
+      "Termini e condizioni d'uso del software SecureLocalShare e di questo sito.",
+    path: "/terms",
+  });
   return (
     <div className="min-h-screen">
       <Navbar />

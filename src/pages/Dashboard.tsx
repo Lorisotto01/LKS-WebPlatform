@@ -736,7 +736,7 @@ function AccountField({
         <Icon className="h-4 w-4" />
       </span>
       <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">{label}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
         <p className="mt-0.5 break-all text-sm font-medium">{value}</p>
       </div>
     </div>

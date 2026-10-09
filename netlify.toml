@@ -2,11 +2,28 @@
   command = "npm run build"
   publish = "dist"
 
+# I file di discovery per agenti/crawler (/.well-known/ai-catalog.json & co.) non esistono: risponde 404
+# invece di restituire l'HTML della SPA con 200, che Lighthouse legge come un manifest JSON malformato.
+# Se in futuro se ne pubblica uno in public/.well-known/, il file statico ha la precedenza (regola non forzata).
+[[redirects]]
+  from = "/.well-known/*"
+  to = "/app.html"
+  status = 404
+
 # SPA fallback so client-side routes (React Router) resolve on direct hits.
+# Punta alla shell vuota app.html, NON a index.html: index.html ora è la home prerenderizzata e
+# idratarla su /login o /dashboard darebbe un mismatch (e un lampo della home). Le pagine pubbliche
+# prerenderizzate (es. pricing.html) sono file statici e hanno la precedenza su questa regola.
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/app.html"
   status = 200
+
+# Asset di Vite: il nome contiene l'hash del contenuto, quindi possono restare in cache per sempre.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
 
 # Set in the Netlify dashboard (Site settings → Environment variables):
 #   VITE_SUPABASE_URL       = https://<project>.supabase.co

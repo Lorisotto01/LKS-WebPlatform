@@ -1,0 +1,29 @@
+# SecureLocalShare
+
+> Password manager e condivisione file privati per la rete locale di casa. Gira su un PC Windows (10/11) che fa da server LAN: le credenziali sono cifrate con AES-256-GCM, tutto funziona offline e nessun dato passa da un cloud di terze parti. Dagli altri dispositivi della rete (telefono, tablet, altri PC) si accede con la Web App.
+
+Punti chiave:
+
+- Ogni vault è un file `.lks` cifrato con AES-256-GCM; la master password non lascia mai il PC.
+- Offline-first: non serve Internet per usare password e file.
+- Multi-utente sulla LAN: più persone sullo stesso server, ognuna con il proprio vault isolato.
+- LocalDrop: condivisione di file cifrati tra i dispositivi della rete.
+- Piani: Free, Essential e Pro (abbonamento mensile o annuale); la licenza è legata al dispositivo.
+
+## Prodotto
+
+- [Funzionalità](https://securelocalshare.sottolab.it/funzionalita): cosa fanno l'app desktop, la Web App e LocalDrop
+- [Sicurezza](https://securelocalshare.sottolab.it/sicurezza): modello di sicurezza, cifratura e rischi dichiarati
+- [Prezzi](https://securelocalshare.sottolab.it/pricing): confronto tra i piani Free, Essential e Pro
+
+## Documentazione
+
+- [Documentazione](https://securelocalshare.sottolab.it/docs): guida all'installazione e all'uso
+- [FAQ](https://securelocalshare.sottolab.it/faq): domande frequenti su installazione, rete e licenze
+- [Changelog](https://securelocalshare.sottolab.it/changelog): novità e correzioni di ogni versione
+
+## Optional
+
+- [Chi sono](https://securelocalshare.sottolab.it/chi-sono): chi sviluppa SecureLocalShare
+- [Privacy](https://securelocalshare.sottolab.it/privacy): informativa sul trattamento dei dati
+- [Termini](https://securelocalshare.sottolab.it/terms): termini e condizioni d'uso

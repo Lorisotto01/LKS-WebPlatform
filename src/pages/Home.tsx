@@ -68,11 +68,13 @@ export function Home() {
         ]}
       />
 
+      <main>
       {/* ---------------- Hero ---------------- */}
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-x-0 -top-20 h-[480px] bg-hero-glow" />
         <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 lg:grid-cols-2 lg:py-28">
-          <div className="animate-fade-up">
+          {/* Niente animate-fade-up qui: il sottotitolo è l'elemento LCP e partire da opacity 0 ne ritardava il paint */}
+          <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Privato - Offline-first - Zero cloud
             </span>
@@ -104,8 +106,8 @@ export function Home() {
             </p>
           </div>
 
-          {/* App mockup */}
-          <div className="animate-fade-up [animation-delay:120ms]">
+          {/* App mockup: illustrazione con dati finti, nascosta agli screen reader (e all'audit di contrasto) */}
+          <div className="animate-fade-up [animation-delay:120ms]" aria-hidden="true">
             <AppMockup />
           </div>
         </div>
@@ -147,7 +149,7 @@ export function Home() {
           <div className="mt-12 grid gap-5 md:grid-cols-3">
             {STEPS.map((s, i) => (
               <div key={s.title} className="group relative rounded-xl border bg-card/60 p-6 shadow-card transition-colors hover:border-primary/40">
-                <span className="absolute right-5 top-5 text-sm font-semibold text-muted-foreground/40">
+                <span className="absolute right-5 top-5 text-sm font-semibold text-muted-foreground">
                   0{i + 1}
                 </span>
                 <span className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -189,7 +191,7 @@ export function Home() {
 
           {/* Tech badges */}
           <div className="mt-16 text-center">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/70">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Costruito con tecnologie battle-tested
             </p>
             <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
@@ -228,6 +230,7 @@ export function Home() {
           </div>
         </div>
       </section>
+      </main>
 
       <SiteFooter />
     </div>
@@ -295,7 +298,7 @@ function AppMockup() {
                 <n.icon className="h-3.5 w-3.5" />
                 <span className="flex-1">{n.label}</span>
                 {n.count && (
-                  <span className={`text-[9px] ${n.active ? "text-primary" : "text-muted-foreground/70"}`}>{n.count}</span>
+                  <span className={`text-[9px] ${n.active ? "text-primary" : "text-muted-foreground"}`}>{n.count}</span>
                 )}
               </div>
             ))}
@@ -348,7 +351,7 @@ function AppMockup() {
           </div>
 
           {/* Analytics */}
-          <div className="mb-1 text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/70">Analytics</div>
+          <div className="mb-1 text-[8px] font-semibold uppercase tracking-wider text-muted-foreground">Analytics</div>
           <div className="mb-2 grid grid-cols-4 gap-1.5">
             {[
               { icon: KeyRound, label: "Password", value: "24" },
@@ -432,7 +435,7 @@ function SiteFooter() {
         </div>
         {cols.map((c) => (
           <div key={c.title}>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">{c.title}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{c.title}</p>
             <ul className="mt-3 space-y-2">
               {c.links.map((l) => (
                 <li key={l.label}>

@@ -38,6 +38,7 @@ export function ChiSono() {
         ]}
       />
 
+      <main>
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-x-0 -top-20 h-[360px] bg-hero-glow" />
         <div className="relative mx-auto max-w-5xl px-6 py-16">
@@ -62,25 +63,30 @@ export function ChiSono() {
             </div>
 
             <h1 className="mt-6 text-3xl font-extrabold tracking-tight sm:text-4xl">{name}</h1>
-            {profile?.headline && (
-              <p className="mt-2 inline-flex items-center gap-1.5 text-primary">
-                <Sparkles className="h-4 w-4" /> {profile.headline}
-              </p>
+            {/* Durante il caricamento la riga resta riservata: il layout non salta quando arriva il profilo */}
+            {loading ? (
+              <div className="mt-2 h-6 w-56 animate-pulse rounded bg-card/70" />
+            ) : (
+              profile?.headline && (
+                <p className="mt-2 inline-flex items-center gap-1.5 text-primary">
+                  <Sparkles className="h-4 w-4" /> {profile.headline}
+                </p>
+              )
             )}
           </div>
 
-          <div className="mt-12 grid gap-8 lg:grid-cols-[1.7fr_1fr]">
+          {/* Biografia e contatti compaiono insieme a profilo caricato: con uno scheletro più basso del
+              testo reale la card Contatti (sotto, su mobile) veniva spinta giù → CLS. Le key diverse
+              obbligano React a sostituire il nodo: riusando lo stesso <div> Chrome lo contava come spostato. */}
+          {loading ? (
+            <div key="skeleton" className="mt-12 h-48 animate-pulse rounded-2xl border bg-card/50" />
+          ) : (
+          <div key="content" className="mt-12 grid gap-8 lg:grid-cols-[1.7fr_1fr]">
             {/* Biografia (spazio centrale) */}
             <article className="rounded-2xl border bg-card/50 p-7 shadow-card">
               <h2 className="text-lg font-semibold">Biografia</h2>
               <div className="mt-4 space-y-4 text-[15px] leading-relaxed text-muted-foreground">
-                {loading ? (
-                  <div className="animate-pulse space-y-3">
-                    <div className="h-4 w-full rounded bg-card/70" />
-                    <div className="h-4 w-5/6 rounded bg-card/70" />
-                    <div className="h-4 w-4/6 rounded bg-card/70" />
-                  </div>
-                ) : bioParagraphs.length > 0 ? (
+                {bioParagraphs.length > 0 ? (
                   bioParagraphs.map((p, i) => <p key={i}>{p}</p>)
                 ) : (
                   <p>La biografia sarà disponibile a breve.</p>
@@ -101,8 +107,7 @@ export function ChiSono() {
                 {(profile?.contacts ?? []).map((c, i) => (
                   <ContactRow key={i} icon={Link2} label={c.label} value={c.value} href={c.href} />
                 ))}
-                {!loading &&
-                  !profile?.email &&
+                {!profile?.email &&
                   !profile?.location &&
                   (profile?.contacts?.length ?? 0) === 0 && (
                     <li className="text-muted-foreground">Nessun contatto disponibile al momento.</li>
@@ -110,8 +115,10 @@ export function ChiSono() {
               </ul>
             </aside>
           </div>
+          )}
         </div>
       </section>
+      </main>
     </div>
   );
 }
@@ -133,7 +140,7 @@ function ContactRow({
         <Icon className="h-4 w-4" />
       </span>
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
         <p className="truncate text-sm font-medium">{value}</p>
       </div>
     </div>

@@ -1,9 +1,16 @@
 import { ShieldCheck, Trash2, Clock, Fingerprint } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { useSeo } from "@/lib/seo";
 
 const UPDATED = "17 giugno 2026";
 
 export function Privacy() {
+  useSeo({
+    title: "Privacy — SecureLocalShare",
+    description:
+      "Informativa sul trattamento dei dati personali raccolti dal sito e dai servizi di SecureLocalShare.",
+    path: "/privacy",
+  });
   return (
     <div className="min-h-screen">
       <Navbar />

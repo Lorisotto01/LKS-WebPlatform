@@ -156,9 +156,9 @@ function FeatureRow({ feature, reverse }: { feature: FeatureDef; reverse: boolea
         <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
           {feature.badge}
         </span>
-        <h3 className="mt-4 flex items-center gap-2 text-2xl font-bold tracking-tight">
+        <h2 className="mt-4 flex items-center gap-2 text-2xl font-bold tracking-tight">
           <Icon className="h-6 w-6 text-primary" /> {feature.title}
-        </h3>
+        </h2>
         <p className="mt-3 text-muted-foreground">{feature.body}</p>
         <ul className="mt-4 space-y-2">
           {feature.points.map((p) => (

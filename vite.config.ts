@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { readFileSync } from "node:fs";
 import path from "path";
@@ -25,9 +25,34 @@ function releaseVersion(): string {
   return pkg.version;
 }
 
+/**
+ * Preload del font Inter (sottoinsieme latin) nell'HTML di build: il nome del file ha l'hash,
+ * quindi non si può scrivere a mano in index.html. Così il font parte insieme al CSS invece
+ * di aspettare che il CSS venga scaricato e interpretato.
+ */
+function preloadInterFont(): Plugin {
+  return {
+    name: "preload-inter-font",
+    apply: "build",
+    transformIndexHtml: {
+      order: "post",
+      handler(_html, ctx) {
+        const font = Object.keys(ctx.bundle ?? {}).find((f) => /inter-latin-wght-normal.*\.woff2$/.test(f));
+        if (!font) return [];
+        return [{
+          tag: "link",
+          attrs: { rel: "preload", href: `/${font}`, as: "font", type: "font/woff2", crossorigin: "" },
+          injectTo: "head-prepend",
+        }];
+      },
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), preloadInterFont()],
   resolve: { alias: { "@": path.resolve(__dirname, "src") } },
   define: { __APP_VERSION__: JSON.stringify(releaseVersion()) },
-  build: { outDir: "dist", emptyOutDir: true },
+  // manifest: serve a scripts/prerender.mjs per precaricare il chunk della pagina prerenderizzata
+  build: { outDir: "dist", emptyOutDir: true, manifest: true },
 });
