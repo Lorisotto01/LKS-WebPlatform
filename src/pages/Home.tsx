@@ -49,9 +49,9 @@ export function Home() {
   const navigate = useNavigate();
   const goDownload = () => navigate("/register");
   useSeo({
-    title: "SecureLocalShare — L'alternativa a 1Password + Google Drive che resta in casa tua",
+    title: "Password manager offline e senza cloud | SecureLocalShare",
     description:
-      "Password manager e condivisione file privati sulla tua rete locale. Niente cloud, niente abbonamenti obbligatori: i tuoi dati non lasciano mai casa tua. Per Windows.",
+      "Password manager offline per Windows con condivisione file sulla rete di casa: cifratura AES-256, niente cloud. L'alternativa locale a 1Password e Google Drive.",
     path: "/",
   });
 
@@ -86,7 +86,8 @@ export function Home() {
               <span className="text-brand-gradient">Solo tue.</span>
             </h1>
             <p className="mt-6 max-w-md text-lg text-muted-foreground">
-              L'alternativa a <span className="text-foreground">1Password + Google Drive</span> che
+              Il <span className="text-foreground">password manager offline</span> per Windows:
+              l'alternativa a <span className="text-foreground">1Password + Google Drive</span> che
               resta in casa tua: password e file al sicuro sulla{" "}
               <span className="text-foreground">tua rete locale</span>. Niente cloud, niente
               abbonamenti obbligatori, niente che lasci casa tua.

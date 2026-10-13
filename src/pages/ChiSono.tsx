@@ -4,17 +4,20 @@ import { Navbar } from "@/components/Navbar";
 import { getAuthorProfile } from "@/lib/profile";
 import { safeHref } from "@/lib/safeHref";
 import { useSeo } from "@/lib/seo";
+import { initialData } from "@/lib/ssrData";
 import type { AuthorProfile } from "@/types/database.types";
 
 export function ChiSono() {
   useSeo({
-    title: "Chi sono — SecureLocalShare | L'autore del progetto",
+    title: "Chi sono: l'autore del password manager locale | SecureLocalShare",
     description:
       "La storia e la visione dietro SecureLocalShare: perché ho creato l'alternativa a 1Password + Google Drive che resta in casa tua, senza cloud e senza compromessi sulla privacy.",
     path: "/chi-sono",
   });
-  const [profile, setProfile] = useState<AuthorProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Nella pagina prerenderizzata il profilo arriva già dal build (SEO): biografia visibile ai crawler.
+  const [initial] = useState(() => initialData("author"));
+  const [profile, setProfile] = useState<AuthorProfile | null>(initial ?? null);
+  const [loading, setLoading] = useState(initial === undefined);
 
   useEffect(() => {
     getAuthorProfile().then((p) => {

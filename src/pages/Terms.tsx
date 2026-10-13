@@ -6,7 +6,7 @@ const UPDATED = "19 giugno 2026";
 
 export function Terms() {
   useSeo({
-    title: "Termini e condizioni — SecureLocalShare",
+    title: "Termini e condizioni d'uso | SecureLocalShare",
     description:
       "Termini e condizioni d'uso del software SecureLocalShare e di questo sito.",
     path: "/terms",

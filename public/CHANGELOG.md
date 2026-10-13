@@ -13,7 +13,101 @@ Storico delle modifiche rilevanti del progetto, raggruppate per modulo:
 | **PATCH** | bugfix, allineamenti, rifiniture |
 
 Più interventi nella stessa sessione condividono la stessa versione, distinti per scope.
-Versione corrente: **5.0.0** (Tool-CLI: **2.5.0**).
+Versione corrente: **5.1.0** (Tool-CLI: **2.6.0**).
+
+---
+
+## [5.1.0] — 2026-10-13
+
+Gli aggiornamenti automatici tornano a funzionare e, se qualcosa va storto, l'app porta al download
+dal sito. Il sito diventa leggibile dai motori di ricerca e protetto da intestazioni di sicurezza.
+LocalDrop permette di eliminare cartelle intere, l'archiviazione conserva categorie e colori, e su
+tablet e telefoni le azioni di ogni riga stanno in un solo pulsante. Il report WatchTower mostra le
+icone dei siti.
+
+### `desktop` / `tool-cli` — l'aggiornamento veniva rifiutato con "firma Ed25519 non valida o assente" (task 869ff7wk9) — *Tool-CLI v2.6.0*
+
+- **Causa trovata.** L'app installata verifica il nuovo eseguibile con la chiave pubblica che contiene
+  *lei*. La 4.9.3 conosce la chiave release della 4.9.0, ma il Tool-CLI firmava sempre con la coppia
+  in `keys/`, che nessuna versione dell'app conosce: la 4.9.3 scaricava la 5.0.0, la scartava e la
+  cancellava. È lo stesso errore già corretto per lo sblocco nella 5.0.0, sul lato aggiornamenti.
+- **Secondo difetto, nella 5.0.0**: al posto della chiave release era stata incorporata la chiave
+  pubblica di *sblocco*. Una 5.0.0 non accetta quindi nessun aggiornamento firmato correttamente.
+- **La chiave release ora è stabile**: è quella della 4.9.0, accettata anche dalle installazioni
+  4.9.x, così una sola firma raggiunge tutti. L'app tiene un elenco di chiavi fidate: per ruotarla
+  in futuro si aggiunge la nuova accanto alla vecchia, senza tagliare fuori nessuno.
+- **Il Tool-CLI sceglie da solo la coppia giusta** confrontando la chiave pubblica con quella delle
+  app (non più la cartella), dice quali versioni accetteranno la firma e, se la coppia non c'è,
+  rifiuta di firmare invece di produrre una release che verrebbe scartata.
+- **Se l'aggiornamento non va a buon fine** (firma, rete, download), l'app propone di aprire l'area
+  personale del sito per scaricare l'installer, invece di fermarsi a un messaggio d'errore.
+- Corretto il doppio "vv" nelle versioni mostrate nel registro (es. "vv5.0.0").
+- I collegamenti dell'app al sito (rinnovo piano, sblocco, download) puntano al dominio
+  `securelocalshare.sottolab.it`.
+
+### `webplatform` — il sito non compariva nelle ricerche (task 869fg1w4z, 869fg20jx)
+
+- **Causa principale: il sito pubblicato era ancora quello vecchio.** La build della 5.0.0 falliva su
+  Netlify: dopo l'aggiornamento di sicurezza a react-router 7, un import (`react-router-dom/server`)
+  non esisteva più. In locale passava solo perché era rimasta installata la versione precedente.
+  Online restava quindi la pagina vuota da riempire con JavaScript — "nessun testo estratto", come
+  aveva notato la ricerca — con l'indirizzo canonico sul dominio sbagliato.
+- **Un solo dominio**: `securelocalshare.netlify.app` rispondeva con le stesse pagine del dominio
+  ufficiale, due copie del sito in concorrenza. Ora reindirizza in modo permanente (301) a
+  `securelocalshare.sottolab.it`.
+- **Documentazione, Chi sono e Changelog con il testo nell'HTML**: caricavano il contenuto solo nel
+  browser, quindi per un motore di ricerca erano pagine vuote. Ora il testo è già nella pagina
+  servita (la documentazione da ~60 caratteri a ~4.900), e il browser lo aggiorna comunque dopo.
+- **Titoli e descrizioni riscritti attorno a ciò che si cerca** ("password manager offline", "senza
+  cloud", "rete locale"), entro le lunghezze che Google mostra per intero; la home si chiama
+  "Password manager offline e senza cloud".
+- **Immagine per le condivisioni** dedicata (1200×630) al posto dell'icona, dati strutturati
+  `WebSite` per il nome del sito nei risultati.
+- **`sitemap.xml` generata a ogni build** dalle stesse pagine prerenderizzate, con la data dell'ultima
+  modifica reale di ciascuna (prima era ferma a luglio).
+- Lighthouse in locale: SEO, accessibilità e best practices 100 su tutte le pagine provate,
+  Performance mobile 94–99.
+
+### `webplatform` — intestazioni di sicurezza e deploy di prova riservati (task 869ffgurw)
+
+- Su tutte le pagine: `Strict-Transport-Security`, `X-Frame-Options`, `X-Content-Type-Options`,
+  `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy` e una
+  `Content-Security-Policy` che ammette solo gli script del sito e le chiamate a Supabase. Provata
+  pagina per pagina: nessuna violazione.
+- **Deploy di prova** (anteprime delle PR e branch deploy) visibili solo dai paesi e dagli IP ammessi:
+  una funzione di guardia, inclusa solo in quelle build, risponde 403 a tutti gli altri. Il sito
+  pubblico non la esegue. Paesi e IP si impostano su Netlify (`PREVIEW_ALLOWED_COUNTRIES`, di
+  default `IT`, e `PREVIEW_ALLOWED_IPS`).
+
+### `webapp` / `desktop` — LocalDrop: cartelle intere, archivi completi, azioni compatte (task 869ff7wwn)
+
+- **Cartelle selezionabili ed eliminabili per intero**: una cartella con contenuto si elimina con
+  sottocartelle e file, dopo una conferma che dice quanti elementi spariranno. Lo stesso dalla
+  selezione multipla, che ora comprende le cartelle e ha il pulsante **Elimina**.
+- **L'archiviazione non perde più categorie e colori.** Lo ZIP conservava solo nomi e contenuti:
+  estraendo un archivio i file tornavano senza categoria e le cartelle con il colore predefinito.
+  L'archivio contiene ora anche questi dati, che l'estrazione riapplica (una categoria eliminata nel
+  frattempo viene semplicemente tralasciata). Gli archivi creati prima di questa versione non li
+  contengono.
+- **Nelle disposizioni a colonne e a griglia** un pulsante prima del titolo di ogni riquadro attiva e
+  disattiva la selezione.
+- **Su tablet e telefoni**, nella lista, le azioni di cartelle e file stanno in un unico pulsante "≡"
+  che le mostra in un menu: la riga non va più a capo per far posto alla fila di icone.
+
+### `webapp` / `desktop` — WatchTower con le icone dei siti (task 869ff7xpk)
+
+- Nel report le credenziali mostrano l'icona della piattaforma, come nella lista delle password,
+  quando hanno l'indirizzo del sito; altrimenti resta l'iniziale colorata.
+
+### Da sapere per l'aggiornamento
+
+- Firmare la release 5.1.0 con il **Tool-CLI 2.6.0** (sceglie da solo `keys/4.9.0/`) e pubblicarla con
+  `min_version = 5.0.0`: le installazioni 4.9.x la scaricano e la accettano direttamente.
+- Chi ha installato la 5.0.0 non può riceverla in automatico (vedi sopra): va installata dal sito.
+  Dalla 5.1.0 in poi, se succede di nuovo, l'app stessa propone il download dal sito.
+- Su Netlify: impostare `PREVIEW_ALLOWED_COUNTRIES` / `PREVIEW_ALLOWED_IPS` per i deploy di prova.
+  Fuori dal codice restano da fare la registrazione su Google Search Console e Bing Webmaster Tools
+  con l'invio della sitemap, e la scelta sul doppio passaggio Cloudflare → Netlify.
 
 ---
 

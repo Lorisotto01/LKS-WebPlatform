@@ -15,6 +15,7 @@
  * Nel browser main.tsx trova #root già pieno e idrata invece di renderizzare da zero:
  * il testo è visibile prima che il JS arrivi (FCP/LCP), e i crawler vedono i meta corretti.
  */
+import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { Writable } from "node:stream";
@@ -23,7 +24,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dist = path.join(root, "dist");
 
-/** Route pubbliche indicizzabili (le stesse di sitemap.xml). */
+/** Route pubbliche indicizzabili: da qui nasce anche sitemap.xml (in fondo al file). */
 const ROUTES = [
   "/",
   "/funzionalita",
@@ -52,9 +53,52 @@ const PAGE_FILES = {
   "/terms": "Terms",
 };
 
-const { app, renderToPipeableStream, ssrSeo, SITE_URL } = await import(
-  pathToFileURL(path.join(root, "dist-ssr", "entry-server.js")).href
-);
+const { app, renderToPipeableStream, ssrSeo, SITE_URL, ssrData, getDocSettings, getPublicDocBlocks, getAuthorProfile,
+  parseChangelog } =
+  await import(pathToFileURL(path.join(root, "dist-ssr", "entry-server.js")).href);
+
+/** Versioni del CHANGELOG incorporate in /changelog: il resto lo carica il browser (il file intero pesa >100 kB). */
+const CHANGELOG_VERSIONS = 4;
+
+/**
+ * Dati che le pagine caricano a runtime, letti qui al build così finiscono nell'HTML (v5.1.0, SEO).
+ * Se Supabase non risponde la build non si ferma: la pagina esce con lo scheletro di caricamento
+ * come prima, e lo si segnala nel log.
+ */
+async function loadData(route) {
+  try {
+    if (route === "/changelog") {
+      const md = readFileSync(path.join(root, "public", "CHANGELOG.md"), "utf8");
+      const starts = [...md.matchAll(/^## \[/gm)].map((m) => m.index);
+      const changelogModules = [
+        ...new Set(parseChangelog(md).versions.flatMap((v) => v.groups.map((g) => g.module))),
+      ];
+      return {
+        changelog: starts.length > CHANGELOG_VERSIONS ? md.slice(0, starts[CHANGELOG_VERSIONS]) : md,
+        changelogModules,
+      };
+    }
+    if (route === "/docs") {
+      const [settings, blocks] = await Promise.all([getDocSettings(), getPublicDocBlocks()]);
+      if (!blocks.length) console.warn("[prerender] /docs: nessun blocco pubblico ricevuto da Supabase");
+      return { docs: { settings, blocks } };
+    }
+    if (route === "/chi-sono") {
+      const author = await getAuthorProfile();
+      if (!author) console.warn("[prerender] /chi-sono: profilo autore non ricevuto da Supabase");
+      return { author };
+    }
+  } catch (e) {
+    console.warn(`[prerender] ${route}: dati non caricati (${e?.message ?? e}), resta lo scheletro`);
+  }
+  return {};
+}
+
+/**
+ * JSON sicuro dentro <script>: ogni "<" diventa \u003c, così né "</script>" né "<!--" nel testo
+ * (il CHANGELOG ne contiene) possono chiudere il blocco in anticipo. JSON.parse lo rilegge identico.
+ */
+const jsonForHtml = (data) => JSON.stringify(data).replace(/</g, "\\u003c");
 
 /**
  * Renderizza una route in stringa. onAllReady aspetta anche le pagine caricate con React.lazy,
@@ -136,6 +180,8 @@ function pageChunks(route) {
 const entryFile = manifest["index.html"].file;
 
 for (const route of ROUTES) {
+  const data = await loadData(route);
+  ssrData.current = data;
   const { html: appHtml, seo } = await render(route);
   if (!seo) throw new Error(`La pagina ${route} non chiama useSeo(): il canonical resterebbe quello della home`);
   if (seo.path !== route) throw new Error(`useSeo() di ${route} dichiara path "${seo.path}"`);
@@ -147,9 +193,40 @@ for (const route of ROUTES) {
     .join("\n    ");
   if (preloads) html = html.replace("</head>", `    ${preloads}\n  </head>`);
   html = html.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);
+  if (Object.keys(data).length)
+    html = html.replace("</body>", () => `  <script type="application/json" id="ssr-data">${jsonForHtml(data)}</script>\n  </body>`);
   html = html.replace('<script type="module" crossorigin', '<script type="module" fetchpriority="low" crossorigin');
 
   const out = route === "/" ? "index.html" : `${route.slice(1)}.html`;
   writeFileSync(path.join(dist, out), html);
   console.log(`[prerender] ${route.padEnd(14)} → dist/${out} (${(html.length / 1024).toFixed(1)} kB)`);
 }
+
+/**
+ * sitemap.xml generata dalle stesse ROUTES (v5.1.0): prima era un file a mano in public/ con lastmod
+ * fermo a luglio. Google usa solo <lastmod>, e solo se attendibile: qui è la data dell'ultimo commit
+ * del file della pagina (per /changelog quella del CHANGELOG), con la data di build come ripiego
+ * quando la storia git non c'è. changefreq e priority vengono ignorati dai motori, quindi non si scrivono.
+ */
+function lastModified(route) {
+  const file =
+    route === "/" ? "src/pages/Home.tsx"
+    : route === "/changelog" ? "public/CHANGELOG.md"
+    : `src/pages/${PAGE_FILES[route]}.tsx`;
+  try {
+    const d = execFileSync("git", ["log", "-1", "--format=%cs", "--", file], { cwd: root, encoding: "utf8" }).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  } catch {
+    // git assente o repo senza storia: si usa la data di build
+  }
+  return new Date().toISOString().slice(0, 10);
+}
+
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generata da scripts/prerender.mjs: solo le pagine pubbliche prerenderizzate. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${ROUTES.map((r) => `  <url>\n    <loc>${SITE_URL}${r}</loc>\n    <lastmod>${lastModified(r)}</lastmod>\n  </url>`).join("\n")}
+</urlset>
+`;
+writeFileSync(path.join(dist, "sitemap.xml"), sitemap);
+console.log(`[prerender] sitemap.xml     → ${ROUTES.length} pagine`);

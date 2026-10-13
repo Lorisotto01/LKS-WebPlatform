@@ -9,7 +9,7 @@ import { useSeo } from "@/lib/seo";
 
 export function Sicurezza() {
   useSeo({
-    title: "Sicurezza — SecureLocalShare | Crittografia AES-256 e zero cloud",
+    title: "Sicurezza: cifratura AES-256 locale, zero cloud | SecureLocalShare",
     description:
       "Come SecureLocalShare protegge le tue password: cifratura AES-256-GCM, chiave derivata in locale (PBKDF2 310k), licenza legata all'HWID e blocchi anti-bruteforce INTEGRITY_LOCK / SECURITY_LOCK.",
     path: "/sicurezza",

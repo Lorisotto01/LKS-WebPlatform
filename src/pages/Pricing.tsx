@@ -13,7 +13,7 @@ interface ActiveDiscount { id: string; label: string; percent: number; applies_t
 
 export function Pricing() {
   useSeo({
-    title: "Prezzi — SecureLocalShare | Free, Essential e Pro",
+    title: "Prezzi e piani: Free, Essential e Pro | SecureLocalShare",
     description:
       "Piani SecureLocalShare: inizia gratis, passa a Essential o Pro per più utenti, spazio e sconti sugli sblocchi di licenza. Nessun vincolo, cambi o disdici quando vuoi.",
     path: "/pricing",

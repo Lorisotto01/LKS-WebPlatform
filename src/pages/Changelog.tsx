@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { useSeo } from "@/lib/seo";
+import { initialData } from "@/lib/ssrData";
 import {
   MODULES, moduleMeta, parseChangelog, formatChangelogDate,
   type ChangelogVersion, type ModuleId, type ModuleMeta,
@@ -166,17 +167,23 @@ const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : us
 
 export function Changelog() {
   useSeo({
-    title: "Changelog — SecureLocalShare",
+    title: "Changelog: novità di ogni versione | SecureLocalShare",
     description:
       "Novità, miglioramenti e correzioni di ogni versione di SecureLocalShare: app desktop, Web App e sito.",
     path: "/changelog",
   });
   const location = useLocation();
-  const [md, setMd] = useState<string | null>(null);
+  // Nella pagina prerenderizzata le ultime versioni arrivano dal build (SEO); il fetch porta poi il file intero.
+  const [md, setMd] = useState<string | null>(() => initialData("changelog") ?? null);
   const [error, setError] = useState(false);
   const [query, setQuery] = useState("");
   const [modules, setModules] = useState<ModuleId[]>([]);
-  const [open, setOpen] = useState<Set<string>>(new Set());
+  // Con i dati del prerender l'ultima versione nasce già aperta: nell'HTML statico c'è il suo testo,
+  // non solo i titoli. Il layout effect qui sotto resta quello che decide (es. #versione nell'URL).
+  const [open, setOpen] = useState<Set<string>>(() => {
+    const latest = md ? parseChangelog(md).versions[0] : undefined;
+    return new Set(latest ? [latest.slug] : []);
+  });
   const [active, setActive] = useState<string | null>(null);
   const [indexOpen, setIndexOpen] = useState(false);
   const sections = useRef(new Map<string, HTMLElement>());
@@ -225,10 +232,14 @@ export function Changelog() {
     [parsed]
   );
 
-  /** Applicativi effettivamente presenti nel file, per i chip di filtro. */
+  /**
+   * Applicativi effettivamente presenti nel file, per i chip di filtro. Il prerender include solo le
+   * ultime versioni ma passa l'elenco del file intero: i chip non cambiano quando arriva il resto
+   * (altrimenti la riga andava a capo e spingeva giù la pagina, CLS ~0,09 su mobile).
+   */
   const availableModules = useMemo(() => {
     if (!parsed) return [];
-    const seen = new Set<ModuleId>();
+    const seen = new Set<ModuleId>(initialData("changelogModules") ?? []);
     for (const v of parsed.versions) for (const g of v.groups) seen.add(g.module);
     return MODULES.filter((m) => seen.has(m.id));
   }, [parsed]);

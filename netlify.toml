@@ -2,6 +2,25 @@
   command = "npm run build"
   publish = "dist"
 
+# Deploy di prova (preview delle PR e branch deploy): stesso build, più la guardia per paese/IP
+# (netlify/preview-guard/preview-guard.ts, task 869ffgurw). Paesi e IP ammessi si impostano nelle
+# variabili d'ambiente PREVIEW_ALLOWED_COUNTRIES (default IT) e PREVIEW_ALLOWED_IPS.
+[context.deploy-preview]
+  command = "node scripts/enable-preview-guard.mjs && npm run build"
+
+[context.branch-deploy]
+  command = "node scripts/enable-preview-guard.mjs && npm run build"
+
+# Dominio unico per i motori di ricerca (v5.1.0, task SEO 869fg1w4z): il sottodominio Netlify rispondeva 200
+# con le stesse pagine di securelocalshare.sottolab.it, cioè due copie del sito in concorrenza tra loro.
+# 301 + force: vale anche per i file statici. Riguarda solo l'host esatto: i deploy preview
+# (deploy-preview-N--securelocalshare.netlify.app) restano raggiungibili. Deve restare la PRIMA regola.
+[[redirects]]
+  from = "https://securelocalshare.netlify.app/*"
+  to = "https://securelocalshare.sottolab.it/:splat"
+  status = 301
+  force = true
+
 # I file di discovery per agenti/crawler (/.well-known/ai-catalog.json & co.) non esistono: risponde 404
 # invece di restituire l'HTML della SPA con 200, che Lighthouse legge come un manifest JSON malformato.
 # Se in futuro se ne pubblica uno in public/.well-known/, il file statico ha la precedenza (regola non forzata).
@@ -18,6 +37,27 @@
   from = "/*"
   to = "/app.html"
   status = 200
+
+# Header di sicurezza su tutte le risposte (v5.1.0, task 869ffgurw).
+# Content-Security-Policy, voce per voce:
+#  - script-src 'self': solo i bundle di Vite. I due <script type="application/ld+json"> e il blocco
+#    <script type="application/json" id="ssr-data"> del prerender sono dati, non codice: la CSP non li blocca.
+#  - style-src 'unsafe-inline': il prerender incorpora il CSS in <style> e React usa attributi style.
+#  - img-src https:: la documentazione accetta immagini da URL esterni scelti dall'admin (oltre a Supabase Storage).
+#  - connect-src: API, autenticazione, storage e realtime di Supabase (unico backend chiamato dal browser).
+#    Stripe e PayPal non servono qui: il checkout ci arriva con un redirect, non con chiamate dalla pagina.
+#  - frame-ancestors 'none' + X-Frame-Options: nessuno può incorniciare il sito (clickjacking).
+# Nei deploy preview la CSP blocca anche la barra di collaborazione di Netlify: è voluto.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Cross-Origin-Opener-Policy = "same-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
 
 # Asset di Vite: il nome contiene l'hash del contenuto, quindi possono restare in cache per sempre.
 [[headers]]

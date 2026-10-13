@@ -9,6 +9,7 @@ import { useSeo } from "@/lib/seo";
 import { getDocSettings, getPublicDocBlocks, type DocBlock } from "@/lib/docs";
 import type { DocSettings } from "@/types/database.types";
 import { safeHref } from "@/lib/safeHref";
+import { initialData } from "@/lib/ssrData";
 
 // Mappa nome icona (stringa salvata nei blocchi title) -> componente lucide.
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -47,14 +48,16 @@ const str = (v: unknown, fb = ""): string => (typeof v === "string" ? v : fb);
 
 export function Docs() {
   useSeo({
-    title: "Documentazione — SecureLocalShare",
+    title: "Guida: installare il password manager in LAN | SecureLocalShare",
     description:
-      "Guida all'installazione e all'uso di SecureLocalShare: server LAN sul PC di casa, Web App, vault cifrati e LocalDrop.",
+      "Guida all'installazione e all'uso di SecureLocalShare, il password manager offline: server sul PC di casa, accesso da telefono in LAN, vault cifrati e LocalDrop.",
     path: "/docs",
   });
-  const [settings, setSettings] = useState<DocSettings | null>(null);
-  const [blocks, setBlocks] = useState<DocBlock[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Nella pagina prerenderizzata i blocchi arrivano già dal build (SEO): niente scheletro al primo disegno.
+  const [initial] = useState(() => initialData("docs"));
+  const [settings, setSettings] = useState<DocSettings | null>(initial?.settings ?? null);
+  const [blocks, setBlocks] = useState<DocBlock[]>(initial?.blocks ?? []);
+  const [loading, setLoading] = useState(!initial);
 
   useEffect(() => {
     Promise.all([getDocSettings(), getPublicDocBlocks()]).then(([s, b]) => {
