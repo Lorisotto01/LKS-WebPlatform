@@ -23,5 +23,7 @@ Disallow: /reset-password
 Disallow: /dashboard
 Disallow: /admin
 Disallow: /checkout
+# Shell vuota della SPA (fallback di Netlify per le route non prerenderizzate): nessun contenuto.
+Disallow: /app.html
 
 Sitemap: https://securelocalshare.sottolab.it/sitemap.xml

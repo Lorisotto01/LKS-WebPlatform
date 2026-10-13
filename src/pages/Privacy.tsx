@@ -6,7 +6,7 @@ const UPDATED = "17 giugno 2026";
 
 export function Privacy() {
   useSeo({
-    title: "Privacy — SecureLocalShare",
+    title: "Informativa privacy | SecureLocalShare",
     description:
       "Informativa sul trattamento dei dati personali raccolti dal sito e dai servizi di SecureLocalShare.",
     path: "/privacy",

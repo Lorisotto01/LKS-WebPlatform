@@ -14,8 +14,8 @@ import { useEffect } from "react";
 /** Origine pubblica del sito, per canonical e og:url assoluti. */
 export const SITE_URL = "https://securelocalshare.sottolab.it";
 
-/** Immagine social di default (TODO: sostituire con una 1200x630 dedicata). */
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/icon-512.png`;
+/** Immagine social di default, 1200x630 (v5.1.0: prima era l'icona 512x512, ritagliata male dalle anteprime). */
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
 
 export interface SeoOptions {
   title: string;

@@ -15,7 +15,7 @@ const SHOW_REVIEWS = false;
 
 export function Recensioni() {
   useSeo({
-    title: "Recensioni — SecureLocalShare",
+    title: "Recensioni del password manager locale | SecureLocalShare",
     description:
       "Le esperienze di chi usa SecureLocalShare, il password manager privato che resta sulla tua rete locale. Presto i primi riscontri reali dei nostri utenti.",
     path: "/recensioni",

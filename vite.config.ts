@@ -9,9 +9,11 @@ import path from "path";
  * progetto sta un livello sopra, ma una copia locale resta valida se la WebPlatform viene
  * costruita da sola. Se non si trova nulla la build non si ferma: si ripiega sulla versione
  * del package.json, che e' comunque meglio di un numero fisso nel JSX.
+ * Su Netlify il repo della WebPlatform e' clonato da solo: li' l'unica copia e' quella versionata
+ * in public/ (prodotta da sync-changelog), per questo va cercata anche lei (v5.1.0).
  */
 function releaseVersion(): string {
-  for (const file of ["../CHANGELOG.md", "./CHANGELOG.md"]) {
+  for (const file of ["../CHANGELOG.md", "./CHANGELOG.md", "./public/CHANGELOG.md"]) {
     try {
       const m = readFileSync(path.resolve(__dirname, file), "utf8")
         .match(/Versione corrente:\s*\*\*([^*]+?)\*\*/i);

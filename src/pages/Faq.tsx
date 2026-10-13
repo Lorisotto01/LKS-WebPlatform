@@ -102,7 +102,7 @@ const FAQS: Faq[] = [
 
 export function Faq() {
   useSeo({
-    title: "FAQ — SecureLocalShare | Domande frequenti",
+    title: "FAQ sul password manager in rete locale | SecureLocalShare",
     description:
       "Risposte alle domande più comuni su SecureLocalShare: accesso da fuori casa, PC spento, master password dimenticata, blocchi di sicurezza SECURITY_LOCK, prezzi e crittografia.",
     path: "/faq",
