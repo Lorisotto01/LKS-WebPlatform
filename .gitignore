@@ -6,3 +6,6 @@ dist
 .DS_Store
 *.temp
 dist-ssr
+# Generata da scripts/enable-preview-guard.mjs nelle sole build di preview
+netlify/edge-functions
+.netlify

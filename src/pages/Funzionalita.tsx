@@ -83,7 +83,7 @@ const FEATURES: FeatureDef[] = [
 
 export function Funzionalita() {
   useSeo({
-    title: "Funzionalità — SecureLocalShare | Password manager e file sharing in LAN",
+    title: "Funzionalità: password e file in rete locale | SecureLocalShare",
     description:
       "Scopri l'ecosistema SecureLocalShare: app Desktop host, Web App multi-dispositivo, password manager cifrato, LocalDrop per i file e aggiornamenti firmati. Tutto sulla tua rete locale.",
     path: "/funzionalita",
